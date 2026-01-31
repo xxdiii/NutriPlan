@@ -1,0 +1,559 @@
+import React, { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
+import { Utensils, Moon, Sun, User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight } from 'lucide-react';
+import { createAndSaveMealPlan } from '../services/mealPlanGenerator';
+import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
+import { getTodayCompliance, getWeeklyCompliance, calculateStreak } from '../services/complianceService';
+
+const DashboardPage = ({ setCurrentPage }) => {
+  const { isDark, toggleTheme } = useTheme();
+  const [userProfile, setUserProfile] = useState(null);
+  const [mealPlan, setMealPlan] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [selectedMealType, setSelectedMealType] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [weeklyCompliance, setWeeklyCompliance] = useState(null);
+
+  const handleViewRecipe = (recipe, mealType) => {
+    setSelectedRecipe(recipe);
+    setSelectedMealType(mealType);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedRecipe(null);
+    setSelectedMealType(null);
+  };
+
+  useEffect(() => {
+    // Load user profile from localStorage
+    const profile = localStorage.getItem('userProfile');
+    if (profile) {
+      setUserProfile(JSON.parse(profile));
+    }
+
+    // Load meal plan if exists
+    const savedPlan = localStorage.getItem('weeklyMealPlan');
+    if (savedPlan) {
+      setMealPlan(JSON.parse(savedPlan));
+    }
+
+    // Load compliance stats
+    const currentStreak = calculateStreak();
+    const weekly = getWeeklyCompliance();
+    setStreak(currentStreak);
+    setWeeklyCompliance(weekly);
+  }, []);
+
+  const handleGenerateMealPlan = async () => {
+    setIsGenerating(true);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const newPlan = createAndSaveMealPlan(userProfile);
+    setMealPlan({
+      plan: newPlan,
+      createdAt: new Date().toISOString()
+    });
+    
+    setIsGenerating(false);
+  };
+
+  const getTodaysMeals = () => {
+    if (!mealPlan || !mealPlan.plan) return null;
+    return mealPlan.plan[0]; // First day is today
+  };
+
+  const todaysMeals = getTodaysMeals();
+
+  if (!userProfile) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDark ? 'bg-gray-900' : 'bg-gray-50'
+      }`}>
+        <div className="text-center">
+          <p className={`text-xl mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Loading your dashboard...
+          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  return (
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDark ? 'bg-gray-900' : 'bg-gray-50'
+    }`}>
+      {/* Navigation */}
+      <nav className={`sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${
+        isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-gray-200'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Utensils className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                NutriPlan
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleTheme}
+                className={`p-2.5 rounded-xl transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <button
+                className={`p-2.5 rounded-xl transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <User className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className={`text-3xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Welcome back! 👋
+          </h1>
+          <div className="flex items-center space-x-2">
+            <Calendar className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+            <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
+              {formatDate(currentDate)}
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Daily Calories */}
+          <div className={`p-6 rounded-2xl shadow-lg ${
+            isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 rounded-xl ${
+                isDark ? 'bg-orange-900/30' : 'bg-orange-100'
+              }`}>
+                <Flame className="w-6 h-6 text-orange-600" />
+              </div>
+              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Today
+              </span>
+            </div>
+            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {todaysMeals ? todaysMeals.totalCalories : 0} / {userProfile.nutritionTargets.targetCalories}
+            </h3>
+            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+              Calories
+            </p>
+            <div className={`mt-3 h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+              <div 
+                className="h-2 rounded-full bg-orange-600" 
+                style={{ 
+                  width: todaysMeals 
+                    ? `${Math.min((todaysMeals.totalCalories / userProfile.nutritionTargets.targetCalories) * 100, 100)}%` 
+                    : '0%' 
+                }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Protein */}
+          <div className={`p-6 rounded-2xl shadow-lg ${
+            isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 rounded-xl ${
+                isDark ? 'bg-blue-900/30' : 'bg-blue-100'
+              }`}>
+                <Target className="w-6 h-6 text-blue-600" />
+              </div>
+              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Protein
+              </span>
+            </div>
+            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {todaysMeals ? todaysMeals.totalProtein : 0} / {userProfile.nutritionTargets.macros.protein}g
+            </h3>
+            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+              Daily Goal
+            </p>
+            <div className={`mt-3 h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+              <div 
+                className="h-2 rounded-full bg-blue-600" 
+                style={{ 
+                  width: todaysMeals 
+                    ? `${Math.min((todaysMeals.totalProtein / userProfile.nutritionTargets.macros.protein) * 100, 100)}%` 
+                    : '0%' 
+                }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Current Weight */}
+          <div className={`p-6 rounded-2xl shadow-lg ${
+            isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 rounded-xl ${
+                isDark ? 'bg-purple-900/30' : 'bg-purple-100'
+              }`}>
+                <TrendingUp className="w-6 h-6 text-purple-600" />
+              </div>
+              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Weight
+              </span>
+            </div>
+            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {userProfile.weight} kg
+            </h3>
+            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+              Current
+            </p>
+            {userProfile.goal !== 'maintain' && (
+              <p className={`text-xs mt-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
+                Target: {userProfile.targetWeight} kg
+              </p>
+            )}
+          </div>
+
+          {/* Streak */}
+          <div className={`p-6 rounded-2xl shadow-lg ${
+            isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 rounded-xl ${
+                isDark ? 'bg-emerald-900/30' : 'bg-emerald-100'
+              }`}>
+                <Award className="w-6 h-6 text-emerald-600" />
+              </div>
+              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Streak
+              </span>
+            </div>
+            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {streak} {streak === 1 ? 'Day' : 'Days'}
+            </h3>
+            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+              {weeklyCompliance && (
+                <span>
+                  {weeklyCompliance.overallCompliance}% compliance this week
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Today's Meals */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Meal Plan */}
+          <div className="lg:col-span-2">
+            <div className={`p-6 rounded-2xl shadow-lg ${
+              isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+            }`}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Today's Meals
+                </h2>
+                {mealPlan && (
+                  <button
+                    onClick={() => setCurrentPage('mealplan')}
+                    className={`text-sm font-medium flex items-center space-x-1 ${
+                      isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'
+                    }`}
+                  >
+                    <span>View Full Plan</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {mealPlan && todaysMeals ? (
+                <div className="space-y-4">
+                  {['breakfast', 'lunch', 'snack', 'dinner'].map((mealType, idx) => {
+                    const meal = todaysMeals[mealType];
+                    const mealIcons = {
+                      breakfast: '🌅',
+                      lunch: '🍽️',
+                      snack: '🍎',
+                      dinner: '🌙'
+                    };
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-xl border ${
+                          isDark ? 'border-gray-700 bg-gray-700/50' : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="text-lg">{mealIcons[mealType]}</span>
+                              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+                              </h3>
+                            </div>
+                            {meal ? (
+                              <>
+                                <p className={`text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  {meal.name}
+                                </p>
+                                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                                  {meal.calories} cal | {meal.protein}g protein
+                                </p>
+                              </>
+                            ) : (
+                              <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                                No meal planned
+                              </p>
+                            )}
+                          </div>
+                          {meal && (
+                            <button onClick={() => handleViewRecipe(meal, mealType)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                              isDark 
+                                ? 'bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50' 
+                                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              }`}>
+                              View
+                            </button>
+                          )}
+                        </div>  
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((meal, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-xl border-2 border-dashed ${
+                        isDark ? 'border-gray-700' : 'border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {meal}
+                          </h3>
+                          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                            No meal planned yet
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-6">
+                <button 
+                  onClick={handleGenerateMealPlan}
+                  disabled={isGenerating}
+                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+                    isGenerating
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:shadow-lg'
+                  }`}
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Utensils className="w-5 h-5" />
+                      <span>{mealPlan ? 'Regenerate' : 'Generate'} Weekly Meal Plan</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Macro Breakdown & Quick Actions */}
+          <div>
+            {/* Macro Breakdown */}
+            <div className={`p-6 rounded-2xl shadow-lg mb-6 ${
+              isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+            }`}>
+              <h2 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Macro Breakdown
+              </h2>
+
+              <div className="space-y-4">
+                {/* Protein */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Protein
+                    </span>
+                    <span className={`text-sm font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                      {todaysMeals ? todaysMeals.totalProtein : 0} / {userProfile.nutritionTargets.macros.protein}g
+                    </span>
+                  </div>
+                  <div className={`h-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    <div 
+                      className="h-3 rounded-full bg-blue-600 transition-all duration-500" 
+                      style={{ 
+                        width: todaysMeals 
+                          ? `${Math.min((todaysMeals.totalProtein / userProfile.nutritionTargets.macros.protein) * 100, 100)}%` 
+                          : '0%' 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Carbs */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Carbs
+                    </span>
+                    <span className={`text-sm font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                      {todaysMeals ? todaysMeals.totalCarbs : 0} / {userProfile.nutritionTargets.macros.carbs}g
+                    </span>
+                  </div>
+                  <div className={`h-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    <div 
+                      className="h-3 rounded-full bg-green-600 transition-all duration-500" 
+                      style={{ 
+                        width: todaysMeals 
+                          ? `${Math.min((todaysMeals.totalCarbs / userProfile.nutritionTargets.macros.carbs) * 100, 100)}%` 
+                          : '0%' 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Fat */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Fat
+                    </span>
+                    <span className={`text-sm font-bold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                      {todaysMeals ? todaysMeals.totalFat : 0} / {userProfile.nutritionTargets.macros.fat}g
+                    </span>
+                  </div>
+                  <div className={`h-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    <div 
+                      className="h-3 rounded-full bg-orange-600 transition-all duration-500" 
+                      style={{ 
+                        width: todaysMeals 
+                          ? `${Math.min((todaysMeals.totalFat / userProfile.nutritionTargets.macros.fat) * 100, 100)}%` 
+                          : '0%' 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className={`p-6 rounded-2xl shadow-lg ${
+              isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+            }`}>
+              <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Quick Actions
+              </h2>
+
+              <div className="space-y-3">
+                <button 
+                  onClick={() => mealPlan && setCurrentPage('mealplan')}
+                  disabled={!mealPlan}
+                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${
+                    mealPlan
+                      ? isDark 
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  📅 View Full Meal Plan
+                </button>
+                <button 
+                  onClick={() => setCurrentPage('progress')}
+                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${
+                    isDark 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  📊 View Progress
+                </button>
+                <button 
+                  onClick={() => mealPlan && setCurrentPage('shopping')}
+                  disabled={!mealPlan}
+                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${
+                    mealPlan
+                      ? isDark 
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  🛒 Shopping List
+                </button>
+                <button className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${
+                  isDark 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}>
+                  📖 Browse Recipes
+                </button>
+                <button className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${
+                  isDark 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}>
+                  ⚙️ Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <RecipeDetailModal 
+        recipe={selectedRecipe}
+        mealType={selectedMealType}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </div>
+  );
+};
+
+export default DashboardPage;
