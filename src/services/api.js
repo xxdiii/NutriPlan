@@ -6,17 +6,14 @@ const handleResponse = async (response) => {
             localStorage.removeItem('token');
         }
 
+        const text = await response.text();
         try {
-            const errorData = await response.json();
+            const errorData = JSON.parse(text);
             // Backend sends 'error', frontend conventionally looks for 'message'
             throw new Error(errorData.message || errorData.error || 'API Error');
         } catch (jsonError) {
-            if (jsonError.message !== 'API Error') {
-                // If json() failed, getting text might give us the HTML error (e.g. from Render/Nginx)
-                const text = await response.text();
-                throw new Error(`Server Error ${response.status}: ${text.slice(0, 100)}`);
-            }
-            throw jsonError;
+            // If parsing failed, use the raw text (likely HTML error from server)
+            throw new Error(`Server Error ${response.status}: ${text.slice(0, 100)}`);
         }
     }
     return response.json();
