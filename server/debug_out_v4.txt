@@ -1,6 +1,0 @@
-[dotenv@17.2.3] injecting env (2) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
-DATABASE_URL: file:./dev.db
-Connecting to database...
-Connection successful.
-User count: 0
-Users: []

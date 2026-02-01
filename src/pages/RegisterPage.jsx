@@ -20,8 +20,7 @@ const RegisterPage = ({ setCurrentPage }) => {
             await register(name, email, password);
             setCurrentPage('onboarding'); // Redirect to onboarding after register
         } catch (err) {
-            console.error('Registration error:', err);
-            setError(err.message || 'Registration failed. Please try again.');
+            setError('Registration failed. Email might be taken.');
         } finally {
             setLoading(false);
         }

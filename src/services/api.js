@@ -4,17 +4,10 @@ const handleResponse = async (response) => {
     if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
             localStorage.removeItem('token');
+            // window.location.reload(); // excessive, maybe just let app handle it
         }
-
-        const text = await response.text();
-        try {
-            const errorData = JSON.parse(text);
-            // Backend sends 'error', frontend conventionally looks for 'message'
-            throw new Error(errorData.message || errorData.error || 'API Error');
-        } catch (jsonError) {
-            // If parsing failed, use the raw text (likely HTML error from server)
-            throw new Error(`Server Error ${response.status}: ${text.slice(0, 100)}`);
-        }
+        const error = await response.json().catch(() => ({ message: 'Something went wrong' }));
+        throw new Error(error.message || 'API Error');
     }
     return response.json();
 };
