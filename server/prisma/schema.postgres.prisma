@@ -1,0 +1,55 @@
+// This is your Prisma schema file for PostgreSQL (for Deployment)
+// Use this instead of schema.prisma when deploying to Render/Railway/Heroku
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  profile   String   // JSON string of the user profile
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  mealPlans  MealPlan[]
+  compliance Compliance[]
+  weightLogs WeightLog[]
+}
+
+model MealPlan {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  startDate DateTime
+  endDate   DateTime
+  planData  String   // JSON string of the plan
+  createdAt DateTime @default(now())
+}
+
+model Compliance {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  date      String   // Storing as YYYY-MM-DD string for easy matching
+  meals     String   // JSON string of meal status
+  
+  @@unique([userId, date])
+}
+
+model WeightLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weight    Float
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+}
