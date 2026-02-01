@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Utensils, Moon, Sun, User, ArrowLeft, ShoppingCart } from 'lucide-react';
 import ShoppingList from '../components/shopping/ShoppingList';
 import { generateShoppingList, estimateCost } from '../services/shoppingListGenerator';
+import { api } from '../services/api';
 
 const ShoppingPage = ({ setCurrentPage }) => {
   const { isDark, toggleTheme } = useTheme();
@@ -14,35 +15,48 @@ const ShoppingPage = ({ setCurrentPage }) => {
     loadShoppingList();
   }, []);
 
-  const loadShoppingList = () => {
+  const loadShoppingList = async () => {
     setIsLoading(true);
 
-    // Get meal plan from localStorage
-    const savedPlan = localStorage.getItem('weeklyMealPlan');
-    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    try {
+      // Try to get meal plan from API first
+      let planData = await api.getMealPlan();
 
-    if (!savedPlan) {
+      // Fallback to localStorage if API fails
+      if (!planData) {
+        const savedPlan = localStorage.getItem('weeklyMealPlan');
+        if (savedPlan) {
+          planData = JSON.parse(savedPlan);
+        }
+      }
+
+      // Get user profile
+      const userProfile = await api.getUserProfile() || JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+      if (!planData || !planData.plan) {
+        setIsLoading(false);
+        return;
+      }
+
+      const weekPlan = planData.plan;
+
+      // Generate shopping list
+      const list = generateShoppingList(weekPlan);
+      const cost = estimateCost(list, userProfile.budget || 'medium', userProfile.servings || 1);
+
+      setShoppingList(list);
+      setCostEstimate(cost);
+    } catch (error) {
+      console.error('Error loading shopping list:', error);
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    const planData = JSON.parse(savedPlan);
-    const weekPlan = planData.plan;
-
-    // Generate shopping list
-    const list = generateShoppingList(weekPlan);
-    const cost = estimateCost(list, userProfile.budget || 'medium', userProfile.servings || 1);
-
-    setShoppingList(list);
-    setCostEstimate(cost);
-    setIsLoading(false);
   };
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${
-        isDark ? 'bg-gray-900' : 'bg-gray-50'
-      }`}>
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'
+        }`}>
         <div className="text-center">
           <ShoppingCart className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'} animate-bounce`} />
           <p className={`text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -55,9 +69,8 @@ const ShoppingPage = ({ setCurrentPage }) => {
 
   if (!shoppingList) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${
-        isDark ? 'bg-gray-900' : 'bg-gray-50'
-      }`}>
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'
+        }`}>
         <div className="text-center">
           <ShoppingCart className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
           <p className={`text-xl mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -75,21 +88,18 @@ const ShoppingPage = ({ setCurrentPage }) => {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDark ? 'bg-gray-900' : 'bg-gray-50'
-    }`}>
-      {/* Navigation */}
-      <nav className={`sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${
-        isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-gray-200'
+    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'
       }`}>
+      {/* Navigation */}
+      <nav className={`sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-gray-200'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setCurrentPage('mealplan')}
-                className={`p-2 rounded-lg ${
-                  isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-                }`}
+                onClick={() => window.history.back()}
+                className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+                  }`}
               >
                 <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} />
               </button>
@@ -106,20 +116,18 @@ const ShoppingPage = ({ setCurrentPage }) => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={toggleTheme}
-                className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`p-2.5 rounded-xl transition-all duration-300 ${isDark
+                  ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
-                className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`p-2.5 rounded-xl transition-all duration-300 ${isDark
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 <User className="w-5 h-5" />
               </button>
@@ -130,7 +138,7 @@ const ShoppingPage = ({ setCurrentPage }) => {
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ShoppingList 
+        <ShoppingList
           shoppingList={shoppingList}
           costEstimate={costEstimate}
         />

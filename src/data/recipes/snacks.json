@@ -3,7 +3,9 @@
     "id": "s1",
     "name": "Protein Smoothie",
     "cuisine": "international",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 5,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -24,17 +26,27 @@
       "Blend until smooth",
       "Serve immediately"
     ],
-    "tags": ["no-cook", "protein-rich", "quick"],
-    "allergens": ["dairy", "peanuts"],
+    "tags": [
+      "no-cook",
+      "protein-rich",
+      "quick"
+    ],
+    "allergens": [
+      "dairy",
+      "peanuts"
+    ],
     "cost": "medium",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/8B5CF6/ffffff?text=Protein+Smoothie"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Protein%20Smoothie%20food&w=500&h=400&c=7"
   },
   {
     "id": "s2",
     "name": "Roasted Makhana",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 5,
     "cookTime": 10,
     "difficulty": "beginner",
@@ -57,17 +69,24 @@
       "Add spices and mix well",
       "Let cool and store"
     ],
-    "tags": ["healthy", "crunchy", "low-calorie"],
+    "tags": [
+      "healthy",
+      "crunchy",
+      "low-calorie"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Roasted+Makhana"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Roasted%20Makhana%20food&w=500&h=400&c=7"
   },
   {
     "id": "s3",
     "name": "Fruit and Nut Mix",
     "cuisine": "international",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 2,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -85,17 +104,26 @@
       "Mix all ingredients in a bowl",
       "Store in airtight container"
     ],
-    "tags": ["no-cook", "energy-boost", "portable"],
-    "allergens": ["tree_nuts"],
+    "tags": [
+      "no-cook",
+      "energy-boost",
+      "portable"
+    ],
+    "allergens": [
+      "tree_nuts"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Fruit+Nut+Mix"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Fruit%20and%20Nut%20Mix%20food&w=500&h=400&c=7"
   },
   {
     "id": "s4",
     "name": "Boiled Eggs",
     "cuisine": "international",
-    "dietaryType": ["eggetarian", "non_veg"],
+    "dietaryType": [
+      "eggetarian",
+      "non_veg"
+    ],
     "prepTime": 2,
     "cookTime": 10,
     "difficulty": "beginner",
@@ -113,17 +141,26 @@
       "Boil eggs for 10 minutes",
       "Peel and season with salt and pepper"
     ],
-    "tags": ["protein-rich", "quick", "simple"],
-    "allergens": ["eggs"],
+    "tags": [
+      "protein-rich",
+      "quick",
+      "simple"
+    ],
+    "allergens": [
+      "eggs"
+    ],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Boiled+Eggs"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Boiled%20Eggs%20food&w=500&h=400&c=7"
   },
   {
     "id": "s5",
     "name": "Sprouts Chaat",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 10,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -148,17 +185,23 @@
       "Garnish with coriander",
       "Serve fresh"
     ],
-    "tags": ["protein-rich", "healthy", "refreshing"],
+    "tags": [
+      "protein-rich",
+      "healthy",
+      "refreshing"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Sprouts+Chaat"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Sprouts%20Chaat%20food&w=500&h=400&c=7"
   },
   {
     "id": "s6",
     "name": "Peanut Butter Toast",
     "cuisine": "international",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 5,
     "cookTime": 3,
     "difficulty": "beginner",
@@ -181,17 +224,27 @@
       "Drizzle honey if desired",
       "Sprinkle chia seeds"
     ],
-    "tags": ["quick", "protein-rich", "filling"],
-    "allergens": ["peanuts", "wheat"],
+    "tags": [
+      "quick",
+      "protein-rich",
+      "filling"
+    ],
+    "allergens": [
+      "peanuts",
+      "wheat"
+    ],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=PB+Toast"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Peanut%20Butter%20Toast%20food&w=500&h=400&c=7"
   },
   {
     "id": "s7",
     "name": "Vegetable Cutlets",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 15,
     "cookTime": 15,
     "difficulty": "intermediate",
@@ -216,17 +269,26 @@
       "Shallow fry until golden",
       "Serve with chutney"
     ],
-    "tags": ["crispy", "popular", "party-snack"],
-    "allergens": ["wheat"],
+    "tags": [
+      "crispy",
+      "popular",
+      "party-snack"
+    ],
+    "allergens": [
+      "wheat"
+    ],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Veg+Cutlets"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Vegetable%20Cutlets%20food&w=500&h=400&c=7"
   },
   {
     "id": "s8",
     "name": "Hummus with Carrots",
     "cuisine": "international",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 10,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -251,17 +313,25 @@
       "Serve with fresh carrot sticks",
       "Drizzle olive oil on top"
     ],
-    "tags": ["healthy", "protein-rich", "mediterranean"],
-    "allergens": ["sesame"],
+    "tags": [
+      "healthy",
+      "protein-rich",
+      "mediterranean"
+    ],
+    "allergens": [
+      "sesame"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Hummus"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Hummus%20Carrots%20food&w=500&h=400&c=7"
   },
   {
     "id": "s9",
     "name": "Greek Yogurt with Berries",
     "cuisine": "international",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 3,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -284,17 +354,26 @@
       "Garnish with almonds and mint",
       "Serve chilled"
     ],
-    "tags": ["no-cook", "protein-rich", "antioxidants"],
-    "allergens": ["dairy", "tree_nuts"],
+    "tags": [
+      "no-cook",
+      "protein-rich",
+      "antioxidants"
+    ],
+    "allergens": [
+      "dairy",
+      "tree_nuts"
+    ],
     "cost": "medium",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/8B5CF6/ffffff?text=Yogurt+Berries"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Greek%20Yogurt%20Berries%20food&w=500&h=400&c=7"
   },
   {
     "id": "s10",
     "name": "Masala Chai with Biscuits",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 5,
     "cookTime": 10,
     "difficulty": "beginner",
@@ -318,17 +397,26 @@
       "Simmer for 2 minutes",
       "Serve hot with biscuits"
     ],
-    "tags": ["traditional", "comforting", "energizing"],
-    "allergens": ["dairy", "wheat"],
+    "tags": [
+      "traditional",
+      "comforting",
+      "energizing"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat"
+    ],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Masala+Chai"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Masala%20Chai%20Biscuits%20food&w=500&h=400&c=7"
   },
   {
     "id": "s11",
     "name": "Cottage Cheese with Cucumber",
     "cuisine": "international",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 5,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -351,17 +439,26 @@
       "Serve with cucumber and tomatoes",
       "Enjoy fresh and cold"
     ],
-    "tags": ["no-cook", "protein-rich", "low-carb"],
-    "allergens": ["dairy"],
+    "tags": [
+      "no-cook",
+      "protein-rich",
+      "low-carb"
+    ],
+    "allergens": [
+      "dairy"
+    ],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Cottage+Cheese"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Cottage%20Cheese%20Cucumber%20food&w=500&h=400&c=7"
   },
   {
     "id": "s12",
     "name": "Energy Balls",
     "cuisine": "international",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 15,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -385,10 +482,203 @@
       "Coat with coconut or cocoa",
       "Refrigerate for 30 minutes"
     ],
-    "tags": ["no-cook", "energy-boost", "portable"],
-    "allergens": ["tree_nuts"],
+    "tags": [
+      "no-cook",
+      "energy-boost",
+      "portable"
+    ],
+    "allergens": [
+      "tree_nuts"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/8B5CF6/ffffff?text=Energy+Balls"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Energy%20Balls%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "s13",
+    "name": "Apple Slices with Almond Butter",
+    "cuisine": "international",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 5,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 200,
+    "protein": 6,
+    "carbs": 22,
+    "fat": 12,
+    "ingredients": [
+      "Apple 1 sliced",
+      "Almond butter 2 tbsp",
+      "Cinnamon powder"
+    ],
+    "instructions": [
+      "Slice the apple",
+      "Serve with almond butter dip",
+      "Sprinkle cinnamon on top"
+    ],
+    "tags": [
+      "kid-friendly",
+      "quick",
+      "paleo"
+    ],
+    "allergens": [
+      "tree_nuts"
+    ],
+    "cost": "medium",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Apple%20Almond%20Butter%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "s14",
+    "name": "Edamame Beans",
+    "cuisine": "asian",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 5,
+    "cookTime": 5,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 120,
+    "protein": 11,
+    "carbs": 9,
+    "fat": 5,
+    "ingredients": [
+      "Edamame pods 2 cups",
+      "Sea salt",
+      "Chilli flakes (optional)"
+    ],
+    "instructions": [
+      "Boil or steam edamame pods for 5 minutes",
+      "Drain and sprinkle generously with salt",
+      "Serve hot"
+    ],
+    "tags": [
+      "low-calorie",
+      "high-protein",
+      "bar-snack"
+    ],
+    "allergens": [
+      "soy"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Edamame%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "s15",
+    "name": "Rice Cakes with Avocado",
+    "cuisine": "international",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 5,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 180,
+    "protein": 4,
+    "carbs": 24,
+    "fat": 10,
+    "ingredients": [
+      "Rice cakes 2",
+      "Avocado 1/2 mashed",
+      "Everything bagel seasoning",
+      "Lemon squeeze"
+    ],
+    "instructions": [
+      "Mash avocado with lemon",
+      "Spread on rice cakes",
+      "Sprinkle seasoning"
+    ],
+    "tags": [
+      "trendy",
+      "light",
+      "gluten-free"
+    ],
+    "allergens": [
+      "sesame"
+    ],
+    "cost": "medium",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Rice%20Cakes%20Avocado%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "s16",
+    "name": "Dark Chocolate Squares",
+    "cuisine": "international",
+    "dietaryType": [
+      "vegetarian"
+    ],
+    "prepTime": 0,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 150,
+    "protein": 2,
+    "carbs": 12,
+    "fat": 10,
+    "ingredients": [
+      "Dark chocolate (70%+) 30g"
+    ],
+    "instructions": [
+      "Serve as a quick energy boost or dessert"
+    ],
+    "tags": [
+      "sweet-treat",
+      "antioxidants",
+      "simple"
+    ],
+    "allergens": [
+      "dairy"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Dark%20Chocolate%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "s17",
+    "name": "Veggie Sticks with Guacamole",
+    "cuisine": "mexican",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 10,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 220,
+    "protein": 4,
+    "carbs": 14,
+    "fat": 16,
+    "ingredients": [
+      "Carrot sticks",
+      "Celery sticks",
+      "Bell pepper strips",
+      "Avocado ripe",
+      "Onion minced",
+      "Tomato minced",
+      "Lime"
+    ],
+    "instructions": [
+      "Mash avocado with lime, onion and tomato for guacamole",
+      "Serve with fresh vegetable sticks for dipping"
+    ],
+    "tags": [
+      "low-carb",
+      "party-snack",
+      "healthy-fats"
+    ],
+    "allergens": [],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Guacamole%20Veggies%20food&w=500&h=400&c=7"
   }
 ]

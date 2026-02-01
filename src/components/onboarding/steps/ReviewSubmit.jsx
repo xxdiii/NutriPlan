@@ -4,8 +4,9 @@ import { useTheme } from '../../../context/ThemeContext';
 import { calculateTDEE, calculateTargetCalories } from '../../../utils/calculations/tdee';
 import { calculateMacros } from '../../../utils/calculations/macros';
 import { ACTIVITY_LEVELS, GOALS, HEALTH_CONDITIONS, ALLERGENS, DIETARY_PREFERENCES, CUISINES, BUDGET_RANGES } from '../../../utils/constants';
+import { api } from '../../../services/api';
 
-const ReviewSubmit = ({ formData, setCurrentStep }) => {
+const ReviewSubmit = ({ formData, setCurrentStep, onComplete }) => {
   const { isDark } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -63,34 +64,46 @@ const ReviewSubmit = ({ formData, setCurrentStep }) => {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-  
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  
-    // Store data in localStorage
-    localStorage.setItem('userProfile', JSON.stringify({
+
+    try {
+      // Prepare profile data with calculated nutrition targets
+      const profileData = {
         ...formData,
         nutritionTargets: {
-        tdee,
-        targetCalories,
-        macros
+          tdee,
+          targetCalories,
+          macros
         },
         createdAt: new Date().toISOString()
-    }));
-  
-    setIsSubmitting(false);
-    setShowSuccess(true);
-  
-    // Navigate to dashboard after 2 seconds
-    setTimeout(() => {
-        window.location.reload(); // This will trigger the useEffect in App.jsx
-    }, 2000);
+      };
+
+      // Save to backend API
+      await api.saveUserProfile(profileData);
+
+      // Also store in localStorage as a cache
+      localStorage.setItem('userProfile', JSON.stringify(profileData));
+
+      setIsSubmitting(false);
+      setShowSuccess(true);
+
+      // Navigate to dashboard after 2 seconds
+      setTimeout(() => {
+        if (onComplete) {
+          onComplete();
+        } else {
+          window.location.reload();
+        }
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      setIsSubmitting(false);
+      alert('Failed to save profile. Please try again.');
+    }
   };
 
   const InfoCard = ({ icon: Icon, title, children, onEdit, stepNumber }) => (
-    <div className={`p-6 rounded-2xl border-2 ${
-      isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-    }`}>
+    <div className={`p-6 rounded-2xl border-2 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <Icon className="w-5 h-5 text-emerald-600" />
@@ -100,9 +113,8 @@ const ReviewSubmit = ({ formData, setCurrentStep }) => {
         </div>
         <button
           onClick={() => setCurrentStep(stepNumber)}
-          className={`text-sm font-medium flex items-center space-x-1 ${
-            isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'
-          }`}
+          className={`text-sm font-medium flex items-center space-x-1 ${isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'
+            }`}
         >
           <Edit className="w-4 h-4" />
           <span>Edit</span>
@@ -152,9 +164,8 @@ const ReviewSubmit = ({ formData, setCurrentStep }) => {
       </div>
 
       {/* Nutrition Targets Summary */}
-      <div className={`p-6 rounded-2xl border-2 ${
-        isDark ? 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20 border-emerald-800' : 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200'
-      }`}>
+      <div className={`p-6 rounded-2xl border-2 ${isDark ? 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20 border-emerald-800' : 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200'
+        }`}>
         <div className="flex items-center space-x-2 mb-4">
           <Calculator className="w-6 h-6 text-emerald-600" />
           <h3 className={`font-bold text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -224,13 +235,13 @@ const ReviewSubmit = ({ formData, setCurrentStep }) => {
 
       {/* Health Conditions */}
       <InfoCard icon={Heart} title="Health & Medical" onEdit={() => setCurrentStep(2)} stepNumber={2}>
-        <InfoRow 
-          label="Health Conditions" 
-          value={getSelectedConditions() || 'None'} 
+        <InfoRow
+          label="Health Conditions"
+          value={getSelectedConditions() || 'None'}
         />
-        <InfoRow 
-          label="Allergies" 
-          value={getSelectedAllergies() || 'None'} 
+        <InfoRow
+          label="Allergies"
+          value={getSelectedAllergies() || 'None'}
         />
         {formData.medications && (
           <InfoRow label="Medications" value={formData.medications} />
@@ -273,20 +284,19 @@ const ReviewSubmit = ({ formData, setCurrentStep }) => {
         <InfoRow label="Budget" value={getBudgetLabel()} />
         <InfoRow label="Region" value={formData.region} />
         <InfoRow label="Servings" value={`${formData.servings} ${formData.servings === 1 ? 'person' : 'people'}`} />
-        <InfoRow 
-          label="Meal Prep" 
+        <InfoRow
+          label="Meal Prep"
           value={
             formData.mealPrepPreference === 'daily' ? 'Cook Daily' :
-            formData.mealPrepPreference === 'batch_3' ? 'Batch Cook (3 days)' :
-            'Weekly Prep'
-          } 
+              formData.mealPrepPreference === 'batch_3' ? 'Batch Cook (3 days)' :
+                'Weekly Prep'
+          }
         />
       </InfoCard>
 
       {/* Important Notice */}
-      <div className={`p-4 rounded-xl ${
-        isDark ? 'bg-yellow-900/20 border border-yellow-800' : 'bg-yellow-50 border border-yellow-200'
-      }`}>
+      <div className={`p-4 rounded-xl ${isDark ? 'bg-yellow-900/20 border border-yellow-800' : 'bg-yellow-50 border border-yellow-200'
+        }`}>
         <div className="flex items-start space-x-2">
           <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
           <div>
@@ -302,11 +312,10 @@ const ReviewSubmit = ({ formData, setCurrentStep }) => {
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className={`px-12 py-5 rounded-xl font-semibold text-xl flex items-center space-x-3 transition-all duration-200 ${
-            isSubmitting
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:shadow-2xl hover:scale-105'
-          }`}
+          className={`px-12 py-5 rounded-xl font-semibold text-xl flex items-center space-x-3 transition-all duration-200 ${isSubmitting
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:shadow-2xl hover:scale-105'
+            }`}
         >
           {isSubmitting ? (
             <>

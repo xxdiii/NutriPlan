@@ -1,3 +1,4 @@
+import { api } from './api';
 import breakfastRecipes from '../data/recipes/breakfast.json';
 import lunchRecipes from '../data/recipes/lunch.json';
 import dinnerRecipes from '../data/recipes/dinner.json';
@@ -12,51 +13,33 @@ const filterRecipes = (recipes, userProfile) => {
     // STRICT: Check allergies (safety-critical)
     const allergyBlocks = checkAllergyViolations(recipe, userProfile);
     if (allergyBlocks.length > 0) {
-      console.log(`Filtered out ${recipe.name} due to allergy`, allergyBlocks.map(v => v.code));
+      // console.log(`Filtered out ${recipe.name} due to allergy`, allergyBlocks.map(v => v.code));
       return false;
     }
 
     // LENIENT: Check dietary preference
-    // If user is vegetarian, allow vegetarian and vegan
-    // If user is vegan, only allow vegan
     const userDiet = userProfile.dietaryPreference;
     const recipeDiets = recipe.dietaryType;
 
     if (userDiet === 'vegan') {
-      if (!recipeDiets.includes('vegan')) {
-        console.log(`Filtered out ${recipe.name} - not vegan`);
-        return false;
-      }
+      if (!recipeDiets.includes('vegan')) return false;
     } else if (userDiet === 'vegetarian') {
-      if (!recipeDiets.includes('vegetarian') && !recipeDiets.includes('vegan')) {
-        console.log(`Filtered out ${recipe.name} - not vegetarian`);
-        return false;
-      }
+      if (!recipeDiets.includes('vegetarian') && !recipeDiets.includes('vegan')) return false;
     } else if (userDiet === 'eggetarian') {
-      // Eggetarian can eat veg + eggs
-      if (!recipeDiets.includes('vegetarian') && 
-          !recipeDiets.includes('vegan') && 
-          !recipeDiets.includes('eggetarian')) {
-        console.log(`Filtered out ${recipe.name} - not eggetarian compatible`);
-        return false;
-      }
+      if (!recipeDiets.includes('vegetarian') &&
+        !recipeDiets.includes('vegan') &&
+        !recipeDiets.includes('eggetarian')) return false;
     } else if (userDiet === 'pescatarian') {
-      // Pescatarian: veg + fish
-      if (recipeDiets.includes('non_veg') && !recipeDiets.includes('pescatarian')) {
-        console.log(`Filtered out ${recipe.name} - contains meat`);
-        return false;
-      }
+      if (recipeDiets.includes('non_veg') && !recipeDiets.includes('pescatarian')) return false;
     }
-    // non_veg can eat everything (no filter needed)
+    // non_veg can eat everything
 
-    // Don't filter by cuisine, cooking skill, or budget - be maximally lenient
-
-    // Attach explainability metadata (used later in UI if needed)
-    // NOTE: safe to mutate here because recipes are imported JSON objects and not React state.
+    // Attach explainability metadata
+    // NOTE: safe to mutate here because we consider these transient findings for this session
     const healthFindings = getHealthConstraintFindings(recipe, userProfile);
     const medFindings = getMedicationFoodWarnings(recipe, userProfile);
     recipe.__constraints = {
-      blocked: [], // currently only allergies are hard blocks
+      blocked: [],
       warnings: [...healthFindings, ...medFindings],
     };
 
@@ -76,8 +59,8 @@ const getMealCalorieTarget = (totalCalories, mealType) => {
   return totalCalories * distribution[mealType];
 };
 
-// Find best matching recipe for calorie target
-const findBestRecipe = (recipes, calorieTarget, usedRecipes = [], allowRepeat = false) => {
+// Find best matching recipe for calorie target and protein density
+const findBestRecipe = (recipes, calorieTarget, usedRecipes = [], allowRepeat = false, targetProteinRatio = 0) => {
   if (!recipes || recipes.length === 0) {
     console.warn('No recipes available to select from');
     return null;
@@ -85,66 +68,65 @@ const findBestRecipe = (recipes, calorieTarget, usedRecipes = [], allowRepeat = 
 
   // First try to find unused recipes
   let available = recipes.filter(r => !usedRecipes.includes(r.id));
-  
-  // If no unused recipes and repeat is allowed, use all recipes
+
+  // If no unused recipes, check fallback strategy
   if (available.length === 0) {
     if (allowRepeat) {
-      console.log('Allowing recipe repetition');
+      // console.log('Allowing recipe repetition');
       available = recipes;
     } else {
-      console.warn('No unused recipes available and repeat not allowed');
-      return null;
+      // FORCE REPEAT: Better to repeat a meal than have no meal at all
+      console.warn('No unused recipes available and repeat not allowed - FORCING REPEAT to avoid missing meal');
+      available = recipes;
     }
   }
 
-  // Sort by how close they are to target calories
-  // Add some randomness for variety
+  // Sort by combination of protein density match and calorie proximity
   const sorted = available.sort((a, b) => {
-    const diffA = Math.abs(a.calories - calorieTarget);
-    const diffB = Math.abs(b.calories - calorieTarget);
-    
-    // If both are within 30% of target, add randomness
-    const targetRange = calorieTarget * 0.3;
-    if (diffA < targetRange && diffB < targetRange) {
-      return Math.random() - 0.5;
+    // Calorie score (lower is better)
+    const calDiffA = Math.abs(a.calories - calorieTarget);
+    const calDiffB = Math.abs(b.calories - calorieTarget);
+    const calScoreA = calDiffA / calorieTarget;
+    const calScoreB = calDiffB / calorieTarget;
+
+    // Protein Density score (lower is better)
+    let densityScoreA = 0;
+    let densityScoreB = 0;
+
+    if (targetProteinRatio > 0) {
+      const densityA = (a.protein * 4) / a.calories;
+      const densityB = (b.protein * 4) / b.calories;
+
+      const diffA = targetProteinRatio - densityA;
+      const diffB = targetProteinRatio - densityB;
+
+      densityScoreA = diffA > 0 ? diffA * 5 : 0;
+      densityScoreB = diffB > 0 ? diffB * 5 : 0;
     }
-    
-    return diffA - diffB;
+
+    // Combined score: Protein mismatch is weighted heavily
+    const healthPenaltyA = (a.__constraints?.warnings?.length || 0) * 50;
+    const healthPenaltyB = (b.__constraints?.warnings?.length || 0) * 50;
+
+    const totalScoreA = calScoreA + densityScoreA + healthPenaltyA;
+    const totalScoreB = calScoreB + densityScoreB + healthPenaltyB;
+
+    return totalScoreA - totalScoreB;
   });
 
-  console.log(`Selected ${sorted[0].name} (${sorted[0].calories} cal) for target ${calorieTarget} cal`);
-  return sorted[0];
+  const best = sorted[0];
+  // console.log(`Selected ${best.name}`);
+  return best;
 };
 
 // Generate a single day's meal plan
-const generateDayPlan = (userProfile, usedBreakfast = [], usedLunch = [], usedDinner = [], usedSnacks = [], dayNumber = 0) => {
+const generateDayPlan = (userProfile, preFilteredRecipes, usedRecipesState, dayNumber = 0) => {
   const targetCalories = userProfile.nutritionTargets.targetCalories;
+  const targetProtein = userProfile.nutritionTargets.macros.protein;
   const servings = userProfile.servings || 1;
 
-  console.log(`\n=== Generating Day ${dayNumber + 1} ===`);
-  console.log('User profile:', {
-    diet: userProfile.dietaryPreference,
-    allergies: userProfile.allergies,
-    targetCal: targetCalories
-  });
-
-  // Filter all recipes
-  const filteredBreakfast = filterRecipes(breakfastRecipes, userProfile);
-  const filteredLunch = filterRecipes(lunchRecipes, userProfile);
-  const filteredDinner = filterRecipes(dinnerRecipes, userProfile);
-  const filteredSnacks = filterRecipes(snackRecipes, userProfile);
-
-  console.log('Filtered recipes count:', {
-    breakfast: filteredBreakfast.length,
-    lunch: filteredLunch.length,
-    dinner: filteredDinner.length,
-    snacks: filteredSnacks.length
-  });
-
-  if (filteredBreakfast.length === 0) console.error('❌ No breakfast recipes available!');
-  if (filteredLunch.length === 0) console.error('❌ No lunch recipes available!');
-  if (filteredDinner.length === 0) console.error('❌ No dinner recipes available!');
-  if (filteredSnacks.length === 0) console.error('❌ No snack recipes available!');
+  // Calculate target protein ratio (Protein Calories / Total Calories)
+  const targetProteinRatio = (targetProtein * 4) / targetCalories;
 
   // Calculate calorie targets per meal
   const breakfastTarget = getMealCalorieTarget(targetCalories, 'breakfast');
@@ -152,75 +134,72 @@ const generateDayPlan = (userProfile, usedBreakfast = [], usedLunch = [], usedDi
   const dinnerTarget = getMealCalorieTarget(targetCalories, 'dinner');
   const snackTarget = getMealCalorieTarget(targetCalories, 'snack');
 
-  console.log('Calorie targets:', {
-    breakfast: breakfastTarget,
-    lunch: lunchTarget,
-    dinner: dinnerTarget,
-    snack: snackTarget
-  });
-
-  // Allow repetition after 3 days (more lenient)
+  // Allow repetition after 3 days, or if we are forced to by low inventory
+  // (though findBestRecipe now implicitly forces repeat if needed)
   const allowRepeat = dayNumber >= 3;
 
-  // Select recipes
-  const breakfast = findBestRecipe(filteredBreakfast, breakfastTarget, usedBreakfast, allowRepeat);
-  const lunch = findBestRecipe(filteredLunch, lunchTarget, usedLunch, allowRepeat);
-  const dinner = findBestRecipe(filteredDinner, dinnerTarget, usedDinner, allowRepeat);
-  const snack = findBestRecipe(filteredSnacks, snackTarget, usedSnacks, allowRepeat);
+  // Select recipes using passed-in filtered lists
+  const breakfast = findBestRecipe(preFilteredRecipes.breakfast, breakfastTarget, usedRecipesState.breakfast, allowRepeat, targetProteinRatio);
+  const lunch = findBestRecipe(preFilteredRecipes.lunch, lunchTarget, usedRecipesState.lunch, allowRepeat, targetProteinRatio);
+  const dinner = findBestRecipe(preFilteredRecipes.dinner, dinnerTarget, usedRecipesState.dinner, allowRepeat, targetProteinRatio);
+  const snack = findBestRecipe(preFilteredRecipes.snack, snackTarget, usedRecipesState.snack, allowRepeat, targetProteinRatio);
 
-  // Calculate scaled nutrition for servings
-  const scaleRecipe = (recipe) => {
+  const calculatePortion = (recipe, targetCal) => {
+    if (!recipe) return 1;
+    const baseCal = recipe.calories;
+    if (!baseCal) return 1;
+    const ratio = targetCal / baseCal;
+    let multiplier = Math.round(ratio * 2) / 2;
+    return Math.max(0.5, Math.min(multiplier, 3.0));
+  };
+
+  const scaleRecipe = (recipe, targetCal) => {
     if (!recipe) return null;
-    const scale = servings / recipe.servings;
+    const portionMultiplier = calculatePortion(recipe, targetCal);
+    const finalScale = servings * portionMultiplier;
+
     return {
       ...recipe,
-      calories: Math.round(recipe.calories * scale),
-      protein: Math.round(recipe.protein * scale),
-      carbs: Math.round(recipe.carbs * scale),
-      fat: Math.round(recipe.fat * scale),
-      scaledServings: servings
+      calories: Math.round(recipe.calories * finalScale),
+      protein: Math.round(recipe.protein * finalScale),
+      carbs: Math.round(recipe.carbs * finalScale),
+      fat: Math.round(recipe.fat * finalScale),
+      scaledServings: finalScale,
+      originalServings: recipe.servings
     };
   };
 
-  const scaledBreakfast = scaleRecipe(breakfast);
-  const scaledLunch = scaleRecipe(lunch);
-  const scaledSnack = scaleRecipe(snack);
-  const scaledDinner = scaleRecipe(dinner);
+  const scaledBreakfast = scaleRecipe(breakfast, breakfastTarget);
+  const scaledLunch = scaleRecipe(lunch, lunchTarget);
+  const scaledSnack = scaleRecipe(snack, snackTarget);
+  const scaledDinner = scaleRecipe(dinner, dinnerTarget);
 
   const dayPlan = {
     breakfast: scaledBreakfast,
     lunch: scaledLunch,
     snack: scaledSnack,
     dinner: scaledDinner,
-    totalCalories: 
-      (scaledBreakfast?.calories || 0) + 
-      (scaledLunch?.calories || 0) + 
-      (scaledSnack?.calories || 0) + 
+    totalCalories:
+      (scaledBreakfast?.calories || 0) +
+      (scaledLunch?.calories || 0) +
+      (scaledSnack?.calories || 0) +
       (scaledDinner?.calories || 0),
-    totalProtein: 
-      (scaledBreakfast?.protein || 0) + 
-      (scaledLunch?.protein || 0) + 
-      (scaledSnack?.protein || 0) + 
+    totalProtein:
+      (scaledBreakfast?.protein || 0) +
+      (scaledLunch?.protein || 0) +
+      (scaledSnack?.protein || 0) +
       (scaledDinner?.protein || 0),
-    totalCarbs: 
-      (scaledBreakfast?.carbs || 0) + 
-      (scaledLunch?.carbs || 0) + 
-      (scaledSnack?.carbs || 0) + 
+    totalCarbs:
+      (scaledBreakfast?.carbs || 0) +
+      (scaledLunch?.carbs || 0) +
+      (scaledSnack?.carbs || 0) +
       (scaledDinner?.carbs || 0),
-    totalFat: 
-      (scaledBreakfast?.fat || 0) + 
-      (scaledLunch?.fat || 0) + 
-      (scaledSnack?.fat || 0) + 
+    totalFat:
+      (scaledBreakfast?.fat || 0) +
+      (scaledLunch?.fat || 0) +
+      (scaledSnack?.fat || 0) +
       (scaledDinner?.fat || 0)
   };
-
-  console.log('Day plan generated:', {
-    breakfast: scaledBreakfast?.name || 'MISSING',
-    lunch: scaledLunch?.name || 'MISSING',
-    snack: scaledSnack?.name || 'MISSING',
-    dinner: scaledDinner?.name || 'MISSING',
-    totalCal: dayPlan.totalCalories
-  });
 
   return dayPlan;
 };
@@ -228,79 +207,92 @@ const generateDayPlan = (userProfile, usedBreakfast = [], usedLunch = [], usedDi
 // Generate full week meal plan
 export const generateWeeklyMealPlan = (userProfile) => {
   console.log('\n🍽️ === STARTING MEAL PLAN GENERATION ===');
-  console.log('Total recipes loaded:', {
-    breakfast: breakfastRecipes.length,
-    lunch: lunchRecipes.length,
-    dinner: dinnerRecipes.length,
-    snacks: snackRecipes.length
+
+  // 1. Filter ALL recipes ONCE at the start (Performance Optimization)
+  console.time('RecipeFiltering');
+  const filteredBreakfast = filterRecipes(breakfastRecipes, userProfile);
+  const filteredLunch = filterRecipes(lunchRecipes, userProfile);
+  const filteredDinner = filterRecipes(dinnerRecipes, userProfile);
+  const filteredSnack = filterRecipes(snackRecipes, userProfile);
+  console.timeEnd('RecipeFiltering');
+
+  console.log('Filtered recipes available:', {
+    breakfast: filteredBreakfast.length,
+    lunch: filteredLunch.length,
+    dinner: filteredDinner.length,
+    snacks: filteredSnack.length
   });
 
-  const weekPlan = [];
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  if (filteredBreakfast.length === 0) console.warn('⚠️ CRITICAL: No breakfast recipes found for this profile!');
+  if (filteredLunch.length === 0) console.warn('⚠️ CRITICAL: No lunch recipes found for this profile!');
 
-  // Separate tracking for each meal type
-  const usedBreakfast = [];
-  const usedLunch = [];
-  const usedDinner = [];
-  const usedSnacks = [];
+  const preFilteredRecipes = {
+    breakfast: filteredBreakfast,
+    lunch: filteredLunch,
+    dinner: filteredDinner,
+    snack: filteredSnack
+  };
+
+  const weekPlan = [];
+
+  // State to track used recipe IDs to encourage variety
+  const usedRecipesState = {
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snack: []
+  };
 
   for (let i = 0; i < 7; i++) {
     const dayPlan = generateDayPlan(
-      userProfile, 
-      usedBreakfast, 
-      usedLunch, 
-      usedDinner, 
-      usedSnacks,
+      userProfile,
+      preFilteredRecipes,
+      usedRecipesState,
       i
     );
-    
+
     // Track used recipes
-    if (dayPlan.breakfast) usedBreakfast.push(dayPlan.breakfast.id);
-    if (dayPlan.lunch) usedLunch.push(dayPlan.lunch.id);
-    if (dayPlan.dinner) usedDinner.push(dayPlan.dinner.id);
-    if (dayPlan.snack) usedSnacks.push(dayPlan.snack.id);
+    if (dayPlan.breakfast) usedRecipesState.breakfast.push(dayPlan.breakfast.id);
+    if (dayPlan.lunch) usedRecipesState.lunch.push(dayPlan.lunch.id);
+    if (dayPlan.dinner) usedRecipesState.dinner.push(dayPlan.dinner.id);
+    if (dayPlan.snack) usedRecipesState.snack.push(dayPlan.snack.id);
 
     const today = new Date();
     const planDate = new Date(today.getTime() + i * 24 * 60 * 60 * 1000);
+    const dayName = planDate.toLocaleDateString('en-US', { weekday: 'long' });
 
     weekPlan.push({
-      day: days[i],
+      day: dayName,
       date: planDate.toISOString().split('T')[0],
       ...dayPlan
     });
   }
 
   console.log('\n✅ === MEAL PLAN GENERATION COMPLETE ===');
-  console.log('Week plan summary:', weekPlan.map((d, i) => ({
-    day: d.day,
-    meals: `B:${d.breakfast ? '✓' : '✗'} L:${d.lunch ? '✓' : '✗'} S:${d.snack ? '✓' : '✗'} D:${d.dinner ? '✓' : '✗'}`
-  })));
-
   return weekPlan;
 };
 
-// Generate meal plan and save to localStorage
-export const createAndSaveMealPlan = (userProfile) => {
-  console.log('\n📋 Creating meal plan for user profile:', {
-    diet: userProfile.dietaryPreference,
-    allergies: userProfile.allergies,
-    goal: userProfile.goal,
-    targetCal: userProfile.nutritionTargets.targetCalories
-  });
-  
-  const mealPlan = generateWeeklyMealPlan(userProfile);
-  
-  const planData = {
-    plan: mealPlan,
-    createdAt: new Date().toISOString(),
-    userProfile: {
-      targetCalories: userProfile.nutritionTargets.targetCalories,
-      macros: userProfile.nutritionTargets.macros
-    }
-  };
-  
-  localStorage.setItem('weeklyMealPlan', JSON.stringify(planData));
-  
-  console.log('✅ Meal plan saved to localStorage');
-  return mealPlan;
+// Generate meal plan and save to Backend
+export const createAndSaveMealPlan = async (userProfile) => {
+  console.log('📋 Creating meal plan for user goal:', userProfile.goal);
+
+  try {
+    const mealPlan = generateWeeklyMealPlan(userProfile);
+
+    const planData = {
+      plan: mealPlan,
+      createdAt: new Date().toISOString(),
+      userProfile: {
+        targetCalories: userProfile.nutritionTargets.targetCalories,
+        macros: userProfile.nutritionTargets.macros
+      }
+    };
+
+    await api.saveMealPlan(planData);
+    console.log('✅ Meal plan saved to Backend');
+    return mealPlan;
+  } catch (err) {
+    console.error('❌ Failed to create/save meal plan:', err);
+    throw err; // Propagate error so UI can show a notification
+  }
 };

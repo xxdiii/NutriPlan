@@ -1,16 +1,117 @@
-# React + Vite
+# 🥗 NutriPlan - Smart Diet & Meal Planning App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+NutriPlan is a modern, full-stack web application designed to help users generate personalized meal plans, track their weight progress, and manage their nutrition goals. Built with React, Node.js, and AI-driven logic, it offers a seamless experience for anyone looking to eat healthier.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **🤖 AI-Powered Meal Planning**: Generates weekly meal plans based on calorie targets, protein goals, dietary preferences (Vegan, Keto, etc.), and allergies.
+- **📊 Progress Tracking**: Log your weight daily and visualize your progress with interactive charts.
+- **🛒 Smart Shopping List**: Automatically generates a shopping list based on your weekly meal plan.
+- **🔐 User Authentication**: Secure login and registration with JWT-based authentication.
+- **👤 Personalized Profile**: Set activity levels, health goals, and dietary constraints.
+- **📱 Responsive Design**: Beautiful, mobile-friendly UI with Dark Mode support.
+- **🍳 Recipe Database**: Extensive collection of recipes for Breakfast, Lunch, Dinner, and Snacks.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Frontend
+- **React** (Vite): Fast, modern UI library.
+- **Tailwind CSS**: Utility-first CSS framework for styling.
+- **Lucide React**: Beautiful icons.
+- **Rect Router**: Client-side routing.
+- **Recharts**: Data visualization for weight tracking.
 
-## Expanding the ESLint configuration
+### Backend
+- **Node.js & Express**: Robust REST API.
+- **Prisma ORM**: Type-safe database access.
+- **SQLite**: Lightweight, serverless database (easy to swap for PostgreSQL/MySQL).
+- **JWT**: Secure stateless authentication.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 Getting Started
+
+Follow these instructions to set up the project locally.
+
+### Prerequisites
+- **Node.js** (v18+ recommended)
+- **npm** or **yarn**
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/smart-diet-app.git
+cd smart-diet-app
+```
+
+### 2. Backend Setup
+The backend handles the API and database.
+
+```bash
+cd server
+
+# Install dependencies
+npm install
+
+# Set up Environment Variables
+# Create a .env file in the server directory with:
+# DATABASE_URL="file:./dev.db"
+# JWT_SECRET="your_super_secret_key"
+
+# Initialize Database & Run Migrations
+npx prisma migrate dev --name init
+
+# Start the Backend Server
+npm start
+# The server will run on http://localhost:3000
+```
+
+### 3. Frontend Setup
+Open a new terminal window for the frontend.
+
+```bash
+# Return to root directory if you are in server/
+cd .. 
+
+# Install dependencies
+npm install
+
+# Start the Development Server
+npm run dev
+```
+The app will open at `http://localhost:5173`.
+
+## 📂 Project Structure
+
+```
+smart-diet-app/
+├── server/                 # Backend Node.js code
+│   ├── prisma/             # Database schema & migrations
+│   ├── index.js            # API entry point & routes
+│   └── ...
+├── src/                    # Frontend React code
+│   ├── components/         # Reusable UI components
+│   ├── contexts/           # Global state (Auth, Theme)
+│   ├── data/               # Static recipe data (JSON)
+│   ├── pages/              # App pages (Dashboard, MealPlan, etc.)
+│   ├── services/           # API integration & generators
+│   └── App.jsx             # Main application component
+└── ...
+```
+
+## 🔌 API Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/register` | Register new user |
+| `POST` | `/api/login` | Login user & get token |
+| `GET` | `/api/profile` | Get user profile |
+| `POST` | `/api/meal-plan` | Save a generated meal plan |
+| `GET` | `/api/meal-plan` | Get current meal plan |
+| `POST` | `/api/weight-logs` | Add new weight entry |
+| `GET` | `/api/weight-logs` | Get weight history |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

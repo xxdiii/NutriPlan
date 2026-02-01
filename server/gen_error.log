@@ -1,0 +1,8 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Error: 
+Cannot find module 'C:\Users\asadi\Desktop\smart-diet-app\server\node_modules\@prisma\client\runtime\query_engine_bg.sqlite.wasm-base64.js'
+Require stack:
+- C:\Users\asadi\Desktop\smart-diet-app\server\node_modules\prisma\build\index.js
+
+

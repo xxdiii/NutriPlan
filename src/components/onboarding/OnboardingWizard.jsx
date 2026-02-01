@@ -9,7 +9,7 @@ import DietaryPreferences from './steps/DietaryPreferences';
 import BudgetRegion from './steps/BudgetRegion';
 import ReviewSubmit from './steps/ReviewSubmit';
 
-const OnboardingWizard = () => {
+const OnboardingWizard = ({ onComplete }) => {
   const { isDark } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -74,7 +74,7 @@ const OnboardingWizard = () => {
       case 5:
         return <BudgetRegion formData={formData} setFormData={setFormData} />;
       case 6:
-        return <ReviewSubmit formData={formData} setCurrentStep={setCurrentStep} />;
+        return <ReviewSubmit formData={formData} setCurrentStep={setCurrentStep} onComplete={onComplete} />;
       default:
         return null;
     }
@@ -115,13 +115,12 @@ const OnboardingWizard = () => {
           <button
             onClick={handleBack}
             disabled={currentStep === 1}
-            className={`px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 ${
-              currentStep === 1
+            className={`px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 ${currentStep === 1
                 ? 'opacity-50 cursor-not-allowed'
                 : isDark
-                ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Back</span>
@@ -130,11 +129,10 @@ const OnboardingWizard = () => {
           <button
             onClick={handleNext}
             disabled={!isStepValid()}
-            className={`px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 ${
-              !isStepValid()
+            className={`px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 ${!isStepValid()
                 ? 'opacity-50 cursor-not-allowed bg-gray-400'
                 : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:shadow-lg hover:scale-105'
-            }`}
+              }`}
           >
             <span>{currentStep === totalSteps ? 'Review' : 'Next'}</span>
             <ArrowRight className="w-5 h-5" />

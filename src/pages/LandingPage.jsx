@@ -6,17 +6,15 @@ const LandingPage = ({ setCurrentPage }) => {
   const { isDark, toggleTheme } = useTheme();
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDark 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+    <div className={`min-h-screen transition-colors duration-300 ${isDark
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
         : 'bg-gradient-to-br from-emerald-50 via-white to-teal-50'
-    }`}>
-      {/* Navigation */}
-      <nav className={`sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${
-        isDark 
-          ? 'bg-gray-900/80 border-gray-700' 
-          : 'bg-white/80 border-emerald-100'
       }`}>
+      {/* Navigation */}
+      <nav className={`sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${isDark
+          ? 'bg-gray-900/80 border-gray-700'
+          : 'bg-white/80 border-emerald-100'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -30,17 +28,16 @@ const LandingPage = ({ setCurrentPage }) => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={toggleTheme}
-                className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
+                className={`p-2.5 rounded-xl transition-all duration-300 ${isDark
+                    ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
                     : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                }`}
+                  }`}
                 aria-label="Toggle theme"
               >
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
-                onClick={() => setCurrentPage('onboarding')}
+                onClick={() => setCurrentPage('register')}
                 className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
               >
                 Get Started
@@ -53,37 +50,35 @@ const LandingPage = ({ setCurrentPage }) => {
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center space-y-8">
-          <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
-            isDark ? 'bg-emerald-900/40 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
-          }`}>
+          <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${isDark ? 'bg-emerald-900/40 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
+            }`}>
             <Shield className="w-4 h-4" />
             <span className="text-sm font-medium">Clinically Validated & Personalized</span>
           </div>
-          
+
           <h1 className={`text-6xl font-bold leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Your Personal
             <span className="block bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
               Nutrition Guide
             </span>
           </h1>
-          
+
           <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
             Get personalized meal plans that respect your health conditions, cultural preferences, and fitness goals. Safe, smart, and delicious.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
-              onClick={() => setCurrentPage('onboarding')}
+              onClick={() => setCurrentPage('register')}
               className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-200 flex items-center space-x-2"
             >
               <span>Start Your Journey</span>
               <TrendingUp className="w-5 h-5" />
             </button>
-            <button className={`px-8 py-4 border-2 rounded-xl font-semibold text-lg transition-all duration-200 ${
-              isDark 
-                ? 'bg-gray-800 border-gray-700 text-emerald-400 hover:bg-gray-700' 
+            <button className={`px-8 py-4 border-2 rounded-xl font-semibold text-lg transition-all duration-200 ${isDark
+                ? 'bg-gray-800 border-gray-700 text-emerald-400 hover:bg-gray-700'
                 : 'bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-            }`}>
+              }`}>
               See How It Works
             </button>
           </div>
@@ -96,9 +91,8 @@ const LandingPage = ({ setCurrentPage }) => {
             { icon: Utensils, label: 'Regional Recipes', value: '1000+' },
             { icon: Target, label: 'Success Rate', value: '94%' }
           ].map((stat, idx) => (
-            <div key={idx} className={`rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
-              isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-            }`}>
+            <div key={idx} className={`rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+              }`}>
               <stat.icon className="w-12 h-12 text-emerald-600 mb-4" />
               <div className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{stat.value}</div>
               <div className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{stat.label}</div>
@@ -158,11 +152,10 @@ const LandingPage = ({ setCurrentPage }) => {
                 color: 'from-green-500 to-emerald-500'
               }
             ].map((feature, idx) => (
-              <div key={idx} className={`rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border ${
-                isDark 
-                  ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+              <div key={idx} className={`rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border ${isDark
+                  ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700'
                   : 'bg-gradient-to-br from-gray-50 to-white border-gray-100'
-              }`}>
+                }`}>
                 <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
                   <feature.icon className="w-7 h-7 text-white" />
                 </div>
@@ -201,7 +194,7 @@ const LandingPage = ({ setCurrentPage }) => {
 
         <div className="text-center mt-16">
           <button
-            onClick={() => setCurrentPage('onboarding')}
+            onClick={() => setCurrentPage('register')}
             className="px-12 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold text-xl hover:shadow-2xl hover:scale-105 transition-all duration-200"
           >
             Start Building Your Plan

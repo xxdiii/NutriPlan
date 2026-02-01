@@ -3,7 +3,9 @@
     "id": "d1",
     "name": "Paneer Butter Masala with Roti",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 20,
     "cookTime": 25,
     "difficulty": "intermediate",
@@ -32,17 +34,26 @@
       "Simmer for 5 minutes",
       "Prepare rotis and serve"
     ],
-    "tags": ["rich", "popular", "protein-rich"],
-    "allergens": ["dairy"],
+    "tags": [
+      "rich",
+      "popular",
+      "protein-rich"
+    ],
+    "allergens": [
+      "dairy"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Paneer+Masala"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Paneer%20Butter%20Masala%20food&w=500&h=400&c=7"
   },
   {
     "id": "d2",
     "name": "Fish Curry with Rice",
     "cuisine": "south_indian",
-    "dietaryType": ["pescatarian", "non_veg"],
+    "dietaryType": [
+      "pescatarian",
+      "non_veg"
+    ],
     "prepTime": 15,
     "cookTime": 30,
     "difficulty": "intermediate",
@@ -69,17 +80,26 @@
       "Cook covered for 15 minutes",
       "Serve with steamed rice"
     ],
-    "tags": ["omega-3", "healthy", "traditional"],
-    "allergens": ["fish"],
+    "tags": [
+      "omega-3",
+      "healthy",
+      "traditional"
+    ],
+    "allergens": [
+      "fish"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/3B82F6/ffffff?text=Fish+Curry"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Fish%20Curry%20food&w=500&h=400&c=7"
   },
   {
     "id": "d3",
     "name": "Rajma Chawal",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 20,
     "cookTime": 40,
     "difficulty": "intermediate",
@@ -107,17 +127,24 @@
       "Simmer 15 minutes",
       "Serve with steamed rice"
     ],
-    "tags": ["comfort-food", "protein-rich", "popular"],
+    "tags": [
+      "comfort-food",
+      "protein-rich",
+      "popular"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/EF4444/ffffff?text=Rajma+Chawal"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Rajma%20Chawal%20food&w=500&h=400&c=7"
   },
   {
     "id": "d4",
     "name": "Grilled Tofu Stir Fry",
     "cuisine": "asian",
-    "dietaryType": ["vegan", "vegetarian"],
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
     "prepTime": 15,
     "cookTime": 20,
     "difficulty": "intermediate",
@@ -144,17 +171,25 @@
       "Toss everything together",
       "Serve with rice or noodles"
     ],
-    "tags": ["vegan", "protein-rich", "quick"],
-    "allergens": ["soy"],
+    "tags": [
+      "vegan",
+      "protein-rich",
+      "quick"
+    ],
+    "allergens": [
+      "soy"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/8B5CF6/ffffff?text=Tofu+Stir+Fry"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Grilled%20Tofu%20Stir%20Fry%20food&w=500&h=400&c=7"
   },
   {
     "id": "d5",
     "name": "Chicken Curry with Rice",
     "cuisine": "north_indian",
-    "dietaryType": ["non_veg"],
+    "dietaryType": [
+      "non_veg"
+    ],
     "prepTime": 20,
     "cookTime": 35,
     "difficulty": "intermediate",
@@ -181,17 +216,25 @@
       "Simmer with curry spices",
       "Serve with steamed rice"
     ],
-    "tags": ["protein-rich", "comfort-food", "popular"],
-    "allergens": ["dairy"],
+    "tags": [
+      "protein-rich",
+      "comfort-food",
+      "popular"
+    ],
+    "allergens": [
+      "dairy"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/EF4444/ffffff?text=Chicken+Curry"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Chicken%20Curry%20food&w=500&h=400&c=7"
   },
   {
     "id": "d6",
     "name": "Palak Paneer with Roti",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 20,
     "cookTime": 25,
     "difficulty": "intermediate",
@@ -217,17 +260,26 @@
       "Finish with cream",
       "Serve with fresh rotis"
     ],
-    "tags": ["nutritious", "iron-rich", "popular"],
-    "allergens": ["dairy"],
+    "tags": [
+      "nutritious",
+      "iron-rich",
+      "popular"
+    ],
+    "allergens": [
+      "dairy"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Palak+Paneer"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Palak%20Paneer%20food&w=500&h=400&c=7"
   },
   {
     "id": "d7",
     "name": "Egg Fried Rice",
     "cuisine": "asian",
-    "dietaryType": ["eggetarian", "non_veg"],
+    "dietaryType": [
+      "eggetarian",
+      "non_veg"
+    ],
     "prepTime": 10,
     "cookTime": 15,
     "difficulty": "beginner",
@@ -252,17 +304,27 @@
       "Add soy sauce and eggs",
       "Garnish with spring onions"
     ],
-    "tags": ["quick", "one-pot", "tasty"],
-    "allergens": ["eggs", "soy"],
+    "tags": [
+      "quick",
+      "one-pot",
+      "tasty"
+    ],
+    "allergens": [
+      "eggs",
+      "soy"
+    ],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Egg+Fried+Rice"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Egg%20Fried%20Rice%20food&w=500&h=400&c=7"
   },
   {
     "id": "d8",
     "name": "Chana Masala with Rice",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 15,
     "cookTime": 35,
     "difficulty": "intermediate",
@@ -287,17 +349,24 @@
       "Simmer with spices for 15 minutes",
       "Serve with steamed rice"
     ],
-    "tags": ["protein-rich", "vegan-friendly", "hearty"],
+    "tags": [
+      "protein-rich",
+      "vegan-friendly",
+      "hearty"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Chana+Masala"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Chana%20Masala%20food&w=500&h=400&c=7"
   },
   {
     "id": "d9",
     "name": "Prawn Curry with Rice",
     "cuisine": "south_indian",
-    "dietaryType": ["pescatarian", "non_veg"],
+    "dietaryType": [
+      "pescatarian",
+      "non_veg"
+    ],
     "prepTime": 15,
     "cookTime": 25,
     "difficulty": "intermediate",
@@ -322,17 +391,26 @@
       "Add tamarind for tanginess",
       "Serve with steamed rice"
     ],
-    "tags": ["seafood", "omega-3", "coastal"],
-    "allergens": ["shellfish"],
+    "tags": [
+      "seafood",
+      "omega-3",
+      "coastal"
+    ],
+    "allergens": [
+      "shellfish"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/3B82F6/ffffff?text=Prawn+Curry"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Prawn%20Curry%20food&w=500&h=400&c=7"
   },
   {
     "id": "d10",
     "name": "Mixed Dal Khichdi",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 10,
     "cookTime": 25,
     "difficulty": "beginner",
@@ -357,10 +435,353 @@
       "Pour over khichdi",
       "Serve with pickle or papad"
     ],
-    "tags": ["comfort-food", "easy-digest", "one-pot"],
+    "tags": [
+      "comfort-food",
+      "easy-digest",
+      "one-pot"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Dal+Khichdi"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Dal%20Khichdi%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d11",
+    "name": "Spaghetti Bolognese",
+    "cuisine": "italian",
+    "dietaryType": [
+      "non_veg"
+    ],
+    "prepTime": 15,
+    "cookTime": 45,
+    "difficulty": "intermediate",
+    "servings": 4,
+    "calories": 600,
+    "protein": 28,
+    "carbs": 70,
+    "fat": 20,
+    "ingredients": [
+      "Minced beef 400g",
+      "Spaghetti 400g",
+      "Onion chopped",
+      "Carrot chopped",
+      "Celery chopped",
+      "Tomato pureé",
+      "Red wine (optional)"
+    ],
+    "instructions": [
+      "Sauté vegetables until soft",
+      "Add minced beef and brown",
+      "Add tomato puree and simmer",
+      "Boil spaghetti",
+      "Serve sauce over pasta"
+    ],
+    "tags": [
+      "family-favorite",
+      "comfort-food",
+      "hearty"
+    ],
+    "allergens": [
+      "wheat"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Spaghetti%20Bolognese%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d12",
+    "name": "Thai Green Curry",
+    "cuisine": "asian",
+    "dietaryType": [
+      "non_veg"
+    ],
+    "prepTime": 20,
+    "cookTime": 20,
+    "difficulty": "intermediate",
+    "servings": 3,
+    "calories": 550,
+    "protein": 24,
+    "carbs": 26,
+    "fat": 38,
+    "ingredients": [
+      "Chicken breast 400g",
+      "Green curry paste",
+      "Coconut milk 400ml",
+      "Bamboo shoots",
+      "Thai basil",
+      "Kaffir lime leaves"
+    ],
+    "instructions": [
+      "Fry curry paste in oil",
+      "Add coconut milk and simmer",
+      "Add chicken and vegetables",
+      "Cook until chicken is done",
+      "Serve with jasmine rice"
+    ],
+    "tags": [
+      "spicy",
+      "aromatic",
+      "exotic"
+    ],
+    "allergens": [
+      "shellfish"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Thai%20Green%20Curry%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d13",
+    "name": "Vegetable Lasagna",
+    "cuisine": "italian",
+    "dietaryType": [
+      "vegetarian"
+    ],
+    "prepTime": 30,
+    "cookTime": 45,
+    "difficulty": "advanced",
+    "servings": 6,
+    "calories": 480,
+    "protein": 18,
+    "carbs": 55,
+    "fat": 22,
+    "ingredients": [
+      "Lasagna sheets",
+      "Ricotta cheese",
+      "Spinach",
+      "Marinara sauce",
+      "Zucchini sliced",
+      "Mozzarella cheese"
+    ],
+    "instructions": [
+      "Layer sauce, noodles, ricotta mix",
+      "Add vegetables and mozzarella",
+      "Repeat layers",
+      "Bake at 375°F for 45 mins",
+      "Let rest before serving"
+    ],
+    "tags": [
+      "comfort-food",
+      "cheesy",
+      "party-food"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Vegetable%20Lasagna%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d14",
+    "name": "Beef Stir Fry with Broccoli",
+    "cuisine": "asian",
+    "dietaryType": [
+      "non_veg"
+    ],
+    "prepTime": 15,
+    "cookTime": 10,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 420,
+    "protein": 32,
+    "carbs": 18,
+    "fat": 22,
+    "ingredients": [
+      "Beef steak strips 300g",
+      "Broccoli florets",
+      "Soy sauce",
+      "Garlic and ginger",
+      "Sesame oil",
+      "Cornstarch"
+    ],
+    "instructions": [
+      "Marinate beef in soy and cornstarch",
+      "Stir fry beef in hot oil",
+      "Add broccoli and aromatics",
+      "Toss until crisp-tender",
+      "Serve hot"
+    ],
+    "tags": [
+      "quick",
+      "protein-rich",
+      "low-carb"
+    ],
+    "allergens": [
+      "soy",
+      "sesame"
+    ],
+    "cost": "medium",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Beef%20Stir%20Fry%20Broccoli%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d15",
+    "name": "Baked Cod with Potatoes",
+    "cuisine": "mediterranean",
+    "dietaryType": [
+      "pescatarian",
+      "non_veg"
+    ],
+    "prepTime": 10,
+    "cookTime": 25,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 350,
+    "protein": 28,
+    "carbs": 32,
+    "fat": 10,
+    "ingredients": [
+      "Cod fillets 2",
+      "Potatoes diced",
+      "Lemon wedges",
+      "Parsley",
+      "Olive oil",
+      "Garlic"
+    ],
+    "instructions": [
+      "Toss potatoes in oil and bake 15 mins",
+      "Add cod fillets to the pan",
+      "Season with lemon and herbs",
+      "Bake another 10-15 mins",
+      "Garnish with fresh parsley"
+    ],
+    "tags": [
+      "healthy",
+      "one-pan",
+      "light"
+    ],
+    "allergens": [
+      "fish"
+    ],
+    "cost": "medium",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Baked%20Cod%20Potatoes%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d16",
+    "name": "Beef Tacos",
+    "cuisine": "mexican",
+    "dietaryType": [
+      "non_veg"
+    ],
+    "prepTime": 15,
+    "cookTime": 15,
+    "difficulty": "beginner",
+    "servings": 3,
+    "calories": 480,
+    "protein": 24,
+    "carbs": 38,
+    "fat": 24,
+    "ingredients": [
+      "Ground beef 400g",
+      "Taco shells",
+      "Lettuce shredded",
+      "Cheese shredded",
+      "Salsa",
+      "Taco seasoning"
+    ],
+    "instructions": [
+      "Brown beef with taco seasoning",
+      "Warm taco shells",
+      "Fill shells with meat",
+      "Top with cheese, lettuce and salsa",
+      "Serve immediately"
+    ],
+    "tags": [
+      "fun",
+      "family-friendly",
+      "spicy"
+    ],
+    "allergens": [
+      "dairy",
+      "corn"
+    ],
+    "cost": "low",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Beef%20Tacos%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d17",
+    "name": "Lemon Herb Roast Chicken",
+    "cuisine": "international",
+    "dietaryType": [
+      "non_veg"
+    ],
+    "prepTime": 15,
+    "cookTime": 60,
+    "difficulty": "intermediate",
+    "servings": 4,
+    "calories": 450,
+    "protein": 36,
+    "carbs": 4,
+    "fat": 32,
+    "ingredients": [
+      "Whole chicken or parts",
+      "Lemon 2 sliced",
+      "Rosemary and Thyme",
+      "Butter",
+      "Garlic cloves"
+    ],
+    "instructions": [
+      "Rub chicken with butter and herbs",
+      "Stuff with lemon and garlic",
+      "Roast at 375°F for 1 hour",
+      "Let rest before carving"
+    ],
+    "tags": [
+      "Sunday-roast",
+      "classic",
+      "paleo"
+    ],
+    "allergens": [
+      "dairy"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Roast%20Chicken%20Lemon%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "d18",
+    "name": "Mushroom Risotto",
+    "cuisine": "italian",
+    "dietaryType": [
+      "vegetarian"
+    ],
+    "prepTime": 15,
+    "cookTime": 40,
+    "difficulty": "advanced",
+    "servings": 3,
+    "calories": 460,
+    "protein": 10,
+    "carbs": 64,
+    "fat": 16,
+    "ingredients": [
+      "Arborio rice 1.5 cups",
+      "Mushrooms assorted",
+      "Vegetable broth 4 cups",
+      "White wine (optional)",
+      "Parmesan cheese",
+      "Butter"
+    ],
+    "instructions": [
+      "Sauté mushrooms and set aside",
+      "Toast rice in butter",
+      "Add broth ladle by ladle, stirring",
+      "Stir in mushrooms and cheese",
+      "Serve creamy hot"
+    ],
+    "tags": [
+      "creamy",
+      "comfort-food",
+      "gourmet"
+    ],
+    "allergens": [
+      "dairy"
+    ],
+    "cost": "medium",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Mushroom%20Risotto%20food&w=500&h=400&c=7"
   }
 ]

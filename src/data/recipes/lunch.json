@@ -3,7 +3,10 @@
     "id": "l1",
     "name": "Dal Tadka with Rice",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 15,
     "cookTime": 30,
     "difficulty": "intermediate",
@@ -32,17 +35,23 @@
       "Pour tadka over dal, simmer 5 minutes",
       "Serve with rice"
     ],
-    "tags": ["protein-rich", "comfort-food", "traditional"],
+    "tags": [
+      "protein-rich",
+      "comfort-food",
+      "traditional"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Dal+Rice"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Dal%20Tadka%20Rice%20food&w=500&h=400&c=7"
   },
   {
     "id": "l2",
     "name": "Grilled Chicken Salad",
     "cuisine": "international",
-    "dietaryType": ["non_veg"],
+    "dietaryType": [
+      "non_veg"
+    ],
     "prepTime": 15,
     "cookTime": 20,
     "difficulty": "intermediate",
@@ -67,17 +76,23 @@
       "Slice grilled chicken",
       "Toss everything with lemon dressing"
     ],
-    "tags": ["protein-rich", "low-carb", "healthy"],
+    "tags": [
+      "protein-rich",
+      "low-carb",
+      "healthy"
+    ],
     "allergens": [],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/EF4444/ffffff?text=Chicken+Salad"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Grilled%20Chicken%20Salad%20food&w=500&h=400&c=7"
   },
   {
     "id": "l3",
     "name": "Chole Bhature",
     "cuisine": "punjabi",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 30,
     "cookTime": 40,
     "difficulty": "advanced",
@@ -103,17 +118,27 @@
       "Roll and deep fry bhature",
       "Serve hot chole with bhature"
     ],
-    "tags": ["indulgent", "traditional", "special"],
-    "allergens": ["dairy", "wheat"],
+    "tags": [
+      "indulgent",
+      "traditional",
+      "special"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat"
+    ],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Chole+Bhature"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Chole%20Bhature%20food&w=500&h=400&c=7"
   },
   {
     "id": "l4",
     "name": "Vegetable Pulao",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 15,
     "cookTime": 25,
     "difficulty": "intermediate",
@@ -139,17 +164,24 @@
       "Add rice and water (1:2 ratio)",
       "Cook covered until rice is done"
     ],
-    "tags": ["one-pot", "aromatic", "nutritious"],
+    "tags": [
+      "one-pot",
+      "aromatic",
+      "nutritious"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Veg+Pulao"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Vegetable%20Pulao%20food&w=500&h=400&c=7"
   },
   {
     "id": "l5",
     "name": "Vegetable Biryani",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 20,
     "cookTime": 35,
     "difficulty": "intermediate",
@@ -174,17 +206,23 @@
       "Cook dum style for 20 minutes",
       "Serve with raita"
     ],
-    "tags": ["aromatic", "special", "festive"],
+    "tags": [
+      "aromatic",
+      "special",
+      "festive"
+    ],
     "allergens": [],
     "cost": "medium",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Veg+Biryani"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Vegetable%20Biryani%20food&w=500&h=400&c=7"
   },
   {
     "id": "l6",
     "name": "Paneer Tikka Wrap",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 20,
     "cookTime": 15,
     "difficulty": "intermediate",
@@ -208,11 +246,346 @@
       "Fill with paneer and veggies",
       "Roll and serve with chutney"
     ],
-    "tags": ["protein-rich", "portable", "tasty"],
-    "allergens": ["dairy", "wheat"],
+    "tags": [
+      "protein-rich",
+      "portable",
+      "tasty"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat"
+    ],
     "cost": "medium",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/EF4444/ffffff?text=Paneer+Wrap"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Paneer%20Tikka%20Wrap%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l7",
+    "name": "Quinoa Salad Bowl",
+    "cuisine": "mediterranean",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 15,
+    "cookTime": 15,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 320,
+    "protein": 10,
+    "carbs": 44,
+    "fat": 12,
+    "ingredients": [
+      "Quinoa 1 cup cooked",
+      "Cucumber diced",
+      "Cherry tomatoes",
+      "Olives",
+      "Red onion",
+      "Lemon vinaigrette"
+    ],
+    "instructions": [
+      "Cook quinoa and let cool",
+      "Chop all vegetables",
+      "Toss quinoa with veggies and dressing",
+      "Garnish with parsley"
+    ],
+    "tags": [
+      "healthy",
+      "refreshing",
+      "gluten-free"
+    ],
+    "allergens": [],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Quinoa%20Salad%20Bowl%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l8",
+    "name": "Mediterranean Pasta Salad",
+    "cuisine": "italian",
+    "dietaryType": [
+      "vegetarian"
+    ],
+    "prepTime": 15,
+    "cookTime": 10,
+    "difficulty": "beginner",
+    "servings": 3,
+    "calories": 380,
+    "protein": 12,
+    "carbs": 58,
+    "fat": 14,
+    "ingredients": [
+      "Fusilli pasta 2 cups",
+      "Feta cheese crumbled",
+      "Sun-dried tomatoes",
+      "Black olives",
+      "Basil pesto"
+    ],
+    "instructions": [
+      "Boil pasta until al dente",
+      "Drain and rinse with cold water",
+      "Mix with pesto, tomatoes and olives",
+      "Crumble feta on top"
+    ],
+    "tags": [
+      "meal-prep",
+      "cold-lunch",
+      "tasty"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Mediterranean%20Pasta%20Salad%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l9",
+    "name": "Mexican Bean Salad",
+    "cuisine": "mexican",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 10,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 300,
+    "protein": 14,
+    "carbs": 42,
+    "fat": 8,
+    "ingredients": [
+      "Black beans 1 cup",
+      "Corn kernels 1 cup",
+      "Bell peppers diced",
+      "Onion chopped",
+      "Cilantro",
+      "Lime dressing"
+    ],
+    "instructions": [
+      "Combine drained beans and corn",
+      "Add chopped veggies and cilantro",
+      "Pour dressing and toss well",
+      "Serve chilled"
+    ],
+    "tags": [
+      "fiber-rich",
+      "colorful",
+      "zesty"
+    ],
+    "allergens": [],
+    "cost": "low",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Mexican%20Bean%20Salad%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l10",
+    "name": "Tuna Sandwich",
+    "cuisine": "international",
+    "dietaryType": [
+      "pescatarian",
+      "non_veg"
+    ],
+    "prepTime": 10,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 400,
+    "protein": 30,
+    "carbs": 35,
+    "fat": 16,
+    "ingredients": [
+      "Canned tuna 1 tin",
+      "Whole wheat bread 2 slices",
+      "Mayo or greek yogurt",
+      "Celery chopped",
+      "Lettuce"
+    ],
+    "instructions": [
+      "Drain tuna and mix with mayo and celery",
+      "Season with salt and pepper",
+      "Toast bread slices",
+      "Assemble sandwich with lettuce"
+    ],
+    "tags": [
+      "protein-rich",
+      "quick",
+      "classic"
+    ],
+    "allergens": [
+      "fish",
+      "eggs",
+      "wheat"
+    ],
+    "cost": "medium",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Tuna%20Sandwich%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l11",
+    "name": "Buddha Bowl",
+    "cuisine": "international",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 20,
+    "cookTime": 20,
+    "difficulty": "intermediate",
+    "servings": 1,
+    "calories": 450,
+    "protein": 16,
+    "carbs": 58,
+    "fat": 18,
+    "ingredients": [
+      "Brown rice 1/2 cup",
+      "Roasted chickpeas",
+      "Sweet potato roasted",
+      "Avocado slices",
+      "Tahini dressing",
+      "Kale massaged"
+    ],
+    "instructions": [
+      "Roast chickpeas and sweet potato",
+      "Arrange rice, veggies and legumes in a bowl",
+      "Top with avocado",
+      "Drizzle tahini dressing"
+    ],
+    "tags": [
+      "nutrient-dense",
+      "balanced",
+      "trendy"
+    ],
+    "allergens": [
+      "sesame"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Buddha%20Bowl%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l12",
+    "name": "Grilled Salmon Asparagus",
+    "cuisine": "international",
+    "dietaryType": [
+      "pescatarian",
+      "non_veg"
+    ],
+    "prepTime": 10,
+    "cookTime": 15,
+    "difficulty": "intermediate",
+    "servings": 1,
+    "calories": 420,
+    "protein": 34,
+    "carbs": 8,
+    "fat": 24,
+    "ingredients": [
+      "Salmon fillet 150g",
+      "Asparagus spears",
+      "Lemon slices",
+      "Olive oil",
+      "Garlic powder"
+    ],
+    "instructions": [
+      "Season salmon and asparagus",
+      "Grill salmon skin-side down",
+      "Grill asparagus until tender",
+      "Serve with lemon wedges"
+    ],
+    "tags": [
+      "low-carb",
+      "keto",
+      "omega-3"
+    ],
+    "allergens": [
+      "fish"
+    ],
+    "cost": "high",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Grilled%20Salmon%20Asparagus%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l13",
+    "name": "Chicken Caesar Wrap",
+    "cuisine": "international",
+    "dietaryType": [
+      "non_veg"
+    ],
+    "prepTime": 10,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 460,
+    "protein": 32,
+    "carbs": 38,
+    "fat": 22,
+    "ingredients": [
+      "Grilled chicken strips",
+      "Tortilla wrap",
+      "Romaine lettuce",
+      "Parmesan cheese",
+      "Caesar dressing"
+    ],
+    "instructions": [
+      "Lay out tortilla",
+      "Add lettuce and chicken",
+      "Sprinkle parmesan and add dressing",
+      "Roll up tightly"
+    ],
+    "tags": [
+      "portable",
+      "popular",
+      "protein-rich"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat",
+      "eggs"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Chicken%20Caesar%20Wrap%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "l14",
+    "name": "Lentil Soup",
+    "cuisine": "mediterranean",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 10,
+    "cookTime": 30,
+    "difficulty": "beginner",
+    "servings": 3,
+    "calories": 280,
+    "protein": 14,
+    "carbs": 42,
+    "fat": 6,
+    "ingredients": [
+      "Lentils 1 cup",
+      "Carrots diced",
+      "Celery diced",
+      "Onion",
+      "Vegetable broth",
+      "Thyme"
+    ],
+    "instructions": [
+      "Sauté onion, carrot and celery",
+      "Add lentils and broth",
+      "Simmer until lentils are soft",
+      "Season with thyme and salt"
+    ],
+    "tags": [
+      "comforting",
+      "fiber-rich",
+      "warm"
+    ],
+    "allergens": [],
+    "cost": "low",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Lentil%20Soup%20food&w=500&h=400&c=7"
   }
-
 ]

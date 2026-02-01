@@ -3,7 +3,10 @@
     "id": "b1",
     "name": "Oats Upma",
     "cuisine": "south_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 10,
     "cookTime": 15,
     "difficulty": "beginner",
@@ -30,17 +33,24 @@
       "Add 1.5 cups water and salt",
       "Cook covered for 5 minutes until oats are soft"
     ],
-    "tags": ["quick", "healthy", "fiber-rich"],
+    "tags": [
+      "quick",
+      "healthy",
+      "fiber-rich"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Oats+Upma"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Oats%20Upma%20food&w=500&h=400&c=7"
   },
   {
     "id": "b2",
     "name": "Scrambled Eggs with Toast",
     "cuisine": "international",
-    "dietaryType": ["eggetarian", "non_veg"],
+    "dietaryType": [
+      "eggetarian",
+      "non_veg"
+    ],
     "prepTime": 5,
     "cookTime": 10,
     "difficulty": "beginner",
@@ -63,17 +73,27 @@
       "Toast the bread slices",
       "Serve scrambled eggs with toast"
     ],
-    "tags": ["protein-rich", "quick", "easy"],
-    "allergens": ["eggs", "dairy", "wheat"],
+    "tags": [
+      "protein-rich",
+      "quick",
+      "easy"
+    ],
+    "allergens": [
+      "eggs",
+      "dairy",
+      "wheat"
+    ],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Scrambled+Eggs"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Scrambled%20Eggs%20with%20Toast%20food&w=500&h=400&c=7"
   },
   {
     "id": "b3",
     "name": "Idli with Sambar",
     "cuisine": "south_indian",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 20,
     "cookTime": 15,
     "difficulty": "intermediate",
@@ -96,17 +116,24 @@
       "Prepare sambar with dal, vegetables, and spices",
       "Serve hot idlis with sambar"
     ],
-    "tags": ["traditional", "low-fat", "fermented"],
+    "tags": [
+      "traditional",
+      "low-fat",
+      "fermented"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Idli+Sambar"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Idli%20Sambar%20food&w=500&h=400&c=7"
   },
   {
     "id": "b4",
     "name": "Poha",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 10,
     "cookTime": 10,
     "difficulty": "beginner",
@@ -133,17 +160,25 @@
       "Add poha and mix gently",
       "Cook for 3-4 minutes, add lemon juice"
     ],
-    "tags": ["quick", "light", "gluten-free"],
-    "allergens": ["peanuts"],
+    "tags": [
+      "quick",
+      "light",
+      "gluten-free"
+    ],
+    "allergens": [
+      "peanuts"
+    ],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Poha"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Poha%20food&w=500&h=400&c=7"
   },
   {
     "id": "b5",
     "name": "Greek Yogurt Parfait",
     "cuisine": "international",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 5,
     "cookTime": 0,
     "difficulty": "beginner",
@@ -166,17 +201,26 @@
       "Drizzle honey",
       "Sprinkle chia seeds"
     ],
-    "tags": ["no-cook", "protein-rich", "quick"],
-    "allergens": ["dairy"],
+    "tags": [
+      "no-cook",
+      "protein-rich",
+      "quick"
+    ],
+    "allergens": [
+      "dairy"
+    ],
     "cost": "medium",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/8B5CF6/ffffff?text=Yogurt+Parfait"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Greek%20Yogurt%20Parfait%20food&w=500&h=400&c=7"
   },
   {
     "id": "b6",
     "name": "Masala Dosa",
     "cuisine": "south_indian",
-    "dietaryType": ["vegetarian", "vegan"],
+    "dietaryType": [
+      "vegetarian",
+      "vegan"
+    ],
     "prepTime": 15,
     "cookTime": 20,
     "difficulty": "intermediate",
@@ -200,17 +244,23 @@
       "Add potato filling in center",
       "Fold dosa and serve with chutney"
     ],
-    "tags": ["traditional", "crispy", "popular"],
+    "tags": [
+      "traditional",
+      "crispy",
+      "popular"
+    ],
     "allergens": [],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Masala+Dosa"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Masala%20Dosa%20food&w=500&h=400&c=7"
   },
   {
     "id": "b7",
     "name": "Vegetable Sandwich",
     "cuisine": "international",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 10,
     "cookTime": 5,
     "difficulty": "beginner",
@@ -234,17 +284,26 @@
       "Season with salt and pepper",
       "Grill or toast until golden"
     ],
-    "tags": ["quick", "easy", "portable"],
-    "allergens": ["dairy", "wheat"],
+    "tags": [
+      "quick",
+      "easy",
+      "portable"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat"
+    ],
     "cost": "low",
     "batchFriendly": false,
-    "imageUrl": "https://via.placeholder.com/300x200/F59E0B/ffffff?text=Veg+Sandwich"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Vegetable%20Sandwich%20food&w=500&h=400&c=7"
   },
   {
     "id": "b8",
     "name": "Paratha with Curd",
     "cuisine": "north_indian",
-    "dietaryType": ["vegetarian"],
+    "dietaryType": [
+      "vegetarian"
+    ],
     "prepTime": 15,
     "cookTime": 20,
     "difficulty": "intermediate",
@@ -268,10 +327,363 @@
       "Cook on tawa with ghee",
       "Serve with curd"
     ],
-    "tags": ["filling", "traditional", "hearty"],
-    "allergens": ["dairy", "wheat"],
+    "tags": [
+      "filling",
+      "traditional",
+      "hearty"
+    ],
+    "allergens": [
+      "dairy",
+      "wheat"
+    ],
     "cost": "low",
     "batchFriendly": true,
-    "imageUrl": "https://via.placeholder.com/300x200/10B981/ffffff?text=Aloo+Paratha"
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Aloo%20Paratha%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b9",
+    "name": "Avocado Toast with Poached Egg",
+    "cuisine": "international",
+    "dietaryType": [
+      "eggetarian",
+      "non_veg"
+    ],
+    "prepTime": 10,
+    "cookTime": 5,
+    "difficulty": "intermediate",
+    "servings": 1,
+    "calories": 350,
+    "protein": 14,
+    "carbs": 28,
+    "fat": 22,
+    "ingredients": [
+      "Sourdough bread 1 slice",
+      "Avocado 1/2 ripe",
+      "Egg 1",
+      "Chilli flakes",
+      "Salt",
+      "Lemon juice"
+    ],
+    "instructions": [
+      "Toast the sourdough slice",
+      "Mash avocado with lemon, salt and chilli",
+      "Poach the egg in simmering water",
+      "Spread avocado on toast",
+      "Top with poached egg"
+    ],
+    "tags": [
+      "trendy",
+      "healthy",
+      "protein-rich"
+    ],
+    "allergens": [
+      "eggs",
+      "wheat"
+    ],
+    "cost": "medium",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Avocado%20Toast%20Poached%20Egg%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b10",
+    "name": "Blueberry Pancakes",
+    "cuisine": "american",
+    "dietaryType": [
+      "vegetarian"
+    ],
+    "prepTime": 10,
+    "cookTime": 15,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 420,
+    "protein": 8,
+    "carbs": 65,
+    "fat": 12,
+    "ingredients": [
+      "Flour 1.5 cups",
+      "Milk 1 cup",
+      "Blueberries 1/2 cup",
+      "Egg 1",
+      "Baking powder",
+      "Butter",
+      "Maple syrup"
+    ],
+    "instructions": [
+      "Mix dry ingredients in a bowl",
+      "Whisk egg and milk, combine with dry mix",
+      "Fold in fresh blueberries",
+      "Cook on buttered skillet until golden",
+      "Serve with maple syrup"
+    ],
+    "tags": [
+      "classic",
+      "sweet",
+      "indulgent"
+    ],
+    "allergens": [
+      "dairy",
+      "eggs",
+      "wheat"
+    ],
+    "cost": "low",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Blueberry%20Pancakes%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b11",
+    "name": "Breakfast Burrito",
+    "cuisine": "mexican",
+    "dietaryType": [
+      "non_veg"
+    ],
+    "prepTime": 15,
+    "cookTime": 10,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 550,
+    "protein": 28,
+    "carbs": 45,
+    "fat": 26,
+    "ingredients": [
+      "Tortilla wrap 1",
+      "Eggs 2 scrambled",
+      "Black beans 1/4 cup",
+      "Cheese shredded",
+      "Salsa",
+      "Avocado slices"
+    ],
+    "instructions": [
+      "Scramble eggs with salt and pepper",
+      "Warm the tortilla",
+      "Layer eggs, beans, cheese and salsa",
+      "Add avocado slices",
+      "Roll tightly and serve"
+    ],
+    "tags": [
+      "hearty",
+      "protein-packed",
+      "spicy"
+    ],
+    "allergens": [
+      "dairy",
+      "eggs",
+      "wheat"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Breakfast%20Burrito%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b12",
+    "name": "Chia Seed Pudding",
+    "cuisine": "international",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 5,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 240,
+    "protein": 8,
+    "carbs": 22,
+    "fat": 14,
+    "ingredients": [
+      "Chia seeds 3 tbsp",
+      "Almond milk 1 cup",
+      "Vanilla extract",
+      "Honey or maple syrup",
+      "Fresh berries"
+    ],
+    "instructions": [
+      "Mix chia seeds, milk, vanilla and sweetener",
+      "Stir well to prevent clumps",
+      "Refrigerate overnight or at least 4 hours",
+      "Top with fresh berries before serving"
+    ],
+    "tags": [
+      "healthy",
+      "no-cook",
+      "superfood"
+    ],
+    "allergens": [
+      "tree_nuts"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Chia%20Seed%20Pudding%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b13",
+    "name": "Mushroom and Spinach Omelette",
+    "cuisine": "french",
+    "dietaryType": [
+      "eggetarian",
+      "non_veg"
+    ],
+    "prepTime": 5,
+    "cookTime": 10,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 320,
+    "protein": 22,
+    "carbs": 6,
+    "fat": 24,
+    "ingredients": [
+      "Eggs 3",
+      "Mushrooms sliced",
+      "Spinach handful",
+      "Cheese (optional)",
+      "Butter",
+      "Salt and pepper"
+    ],
+    "instructions": [
+      "Sauté mushrooms and spinach in butter",
+      "Whisk eggs and pour over vegetables",
+      "Cook until edges set, sprinkle cheese",
+      "Fold and serve"
+    ],
+    "tags": [
+      "low-carb",
+      "keto-friendly",
+      "protein-rich"
+    ],
+    "allergens": [
+      "dairy",
+      "eggs"
+    ],
+    "cost": "low",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Mushroom%20Spinach%20Omelette%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b14",
+    "name": "French Toast",
+    "cuisine": "french",
+    "dietaryType": [
+      "vegetarian"
+    ],
+    "prepTime": 10,
+    "cookTime": 10,
+    "difficulty": "beginner",
+    "servings": 2,
+    "calories": 400,
+    "protein": 12,
+    "carbs": 58,
+    "fat": 14,
+    "ingredients": [
+      "Bread slices 4 (thick)",
+      "Eggs 2",
+      "Milk 1/2 cup",
+      "Cinnamon powder",
+      "Vanilla extract",
+      "Butter",
+      "Syrup"
+    ],
+    "instructions": [
+      "Whisk eggs, milk, cinnamon and vanilla",
+      "Dip bread slices in mixture",
+      "Fry in butter until golden brown",
+      "Serve warm with syrup"
+    ],
+    "tags": [
+      "comfort-food",
+      "sweet",
+      "classic"
+    ],
+    "allergens": [
+      "dairy",
+      "eggs",
+      "wheat"
+    ],
+    "cost": "low",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=French%20Toast%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b15",
+    "name": "Quinoa Breakfast Bowl",
+    "cuisine": "international",
+    "dietaryType": [
+      "vegan",
+      "vegetarian"
+    ],
+    "prepTime": 5,
+    "cookTime": 15,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 340,
+    "protein": 12,
+    "carbs": 52,
+    "fat": 10,
+    "ingredients": [
+      "Quinoa 1/2 cup cooked",
+      "Almond milk 1/2 cup",
+      "Banana sliced",
+      "Cinnamon",
+      "Nuts chopped"
+    ],
+    "instructions": [
+      "Warm quinoa with almond milk",
+      "Stir in cinnamon",
+      "Top with banana slices and nuts",
+      "Drizzle with honey if needed"
+    ],
+    "tags": [
+      "healthy",
+      "gluten-free",
+      "fiber-rich"
+    ],
+    "allergens": [
+      "tree_nuts"
+    ],
+    "cost": "medium",
+    "batchFriendly": true,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Quinoa%20Breakfast%20Bowl%20food&w=500&h=400&c=7"
+  },
+  {
+    "id": "b16",
+    "name": "Smoked Salmon Bagel",
+    "cuisine": "american",
+    "dietaryType": [
+      "pescatarian",
+      "non_veg"
+    ],
+    "prepTime": 5,
+    "cookTime": 0,
+    "difficulty": "beginner",
+    "servings": 1,
+    "calories": 420,
+    "protein": 24,
+    "carbs": 48,
+    "fat": 16,
+    "ingredients": [
+      "Bagel 1 sliced",
+      "Cream cheese 2 tbsp",
+      "Smoked salmon 50g",
+      "Capers",
+      "Red onion sliced",
+      "Dill"
+    ],
+    "instructions": [
+      "Toast the bagel halves",
+      "Spread cream cheese on both sides",
+      "Layer smoked salmon",
+      "Top with capers, onion and dill"
+    ],
+    "tags": [
+      "indulgent",
+      "protein-rich",
+      "brunch"
+    ],
+    "allergens": [
+      "dairy",
+      "fish",
+      "wheat"
+    ],
+    "cost": "high",
+    "batchFriendly": false,
+    "imageUrl": "https://tse2.mm.bing.net/th?q=Smoked%20Salmon%20Bagel%20food&w=500&h=400&c=7"
   }
 ]

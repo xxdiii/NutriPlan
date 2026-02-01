@@ -53,7 +53,7 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
   };
 
   const getCheckedCount = (category) => {
-    return shoppingList.byCategory[category].filter(item => 
+    return shoppingList.byCategory[category].filter(item =>
       checkedItems[item.original.toLowerCase()]
     ).length;
   };
@@ -86,7 +86,7 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
     });
 
     content += `\n\nTOTAL ITEMS: ${shoppingList.totalItems}\n`;
-    content += `ESTIMATED COST: ₹${costEstimate.total}\n`;
+
 
     // Create blob and download
     const blob = new Blob([content], { type: 'text/plain' });
@@ -114,11 +114,10 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
         <div className="flex gap-3">
           <button
             onClick={handleDownload}
-            className={`px-4 py-2 rounded-xl font-medium flex items-center space-x-2 transition-all ${
-              isDark 
-                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+            className={`px-4 py-2 rounded-xl font-medium flex items-center space-x-2 transition-all ${isDark
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             <Download className="w-4 h-4" />
             <span>Download</span>
@@ -126,11 +125,10 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
 
           <button
             onClick={handlePrint}
-            className={`px-4 py-2 rounded-xl font-medium flex items-center space-x-2 transition-all ${
-              isDark 
-                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+            className={`px-4 py-2 rounded-xl font-medium flex items-center space-x-2 transition-all ${isDark
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             <Printer className="w-4 h-4" />
             <span>Print</span>
@@ -138,63 +136,7 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
         </div>
       </div>
 
-      {/* Cost Estimate */}
-      <div className={`p-6 rounded-2xl mb-6 ${
-        isDark 
-          ? 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20 border border-emerald-800' 
-          : 'bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200'
-      }`}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Estimated Cost
-            </h3>
-            {costEstimate.servings > 1 && (
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                For {costEstimate.servings} servings
-              </p>
-            )}
-          </div>
-          <div className="text-right">
-            <div className={`text-3xl font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-              ₹{costEstimate.total}
-            </div>
-            {costEstimate.servings > 1 && costEstimate.estimatedPerPerson && (
-              <div className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                ₹{costEstimate.estimatedPerPerson} per person
-              </div>
-            )}
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          {Object.keys(costEstimate.breakdown).map(category => {
-            const amount = costEstimate.breakdown[category];
-            if (amount === 0) return null;
-            
-            return (
-              <div 
-                key={category}
-                className={`p-3 rounded-xl ${isDark ? 'bg-gray-800/50' : 'bg-white/50'}`}
-              >
-                <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {categoryIcons[category]} {category}
-                </div>
-                <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  ₹{amount}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-white/50'}`}>
-          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            💡 Estimated based on {costEstimate.budgetLevel} budget tier and ingredient quantities. 
-            Actual prices may vary by location and season.
-          </p>
-        </div>
-      </div>
 
       {/* Categories */}
       <div className="space-y-4">
@@ -207,18 +149,16 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
           const colorClass = categoryColors[category][isDark ? 'dark' : 'light'];
 
           return (
-            <div 
+            <div
               key={category}
-              className={`rounded-2xl overflow-hidden ${
-                isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-              }`}
+              className={`rounded-2xl overflow-hidden ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                }`}
             >
               {/* Category Header */}
               <button
                 onClick={() => toggleCategory(category)}
-                className={`w-full p-4 flex items-center justify-between transition-colors ${
-                  isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                }`}
+                className={`w-full p-4 flex items-center justify-between transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass}`}>
@@ -239,9 +179,8 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
                     {items.length} items
                   </span>
                   <svg
-                    className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''} ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}
+                    className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''} ${isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -263,41 +202,37 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
                         <div
                           key={idx}
                           onClick={() => toggleItem(itemKey)}
-                          className={`p-3 rounded-xl cursor-pointer transition-all ${
-                            isChecked
-                              ? isDark 
-                                ? 'bg-emerald-900/30 border-2 border-emerald-600' 
+                          className={`p-3 rounded-xl cursor-pointer transition-all ${isChecked
+                              ? isDark
+                                ? 'bg-emerald-900/30 border-2 border-emerald-600'
                                 : 'bg-emerald-50 border-2 border-emerald-500'
                               : isDark
-                              ? 'bg-gray-700/50 hover:bg-gray-700'
-                              : 'bg-gray-50 hover:bg-gray-100'
-                          }`}
+                                ? 'bg-gray-700/50 hover:bg-gray-700'
+                                : 'bg-gray-50 hover:bg-gray-100'
+                            }`}
                         >
                           <div className="flex items-start space-x-3">
-                            <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                              isChecked
+                            <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${isChecked
                                 ? 'bg-emerald-600 border-emerald-600'
                                 : isDark
-                                ? 'border-gray-600'
-                                : 'border-gray-300'
-                            }`}>
+                                  ? 'border-gray-600'
+                                  : 'border-gray-300'
+                              }`}>
                               {isChecked && (
                                 <Check className="w-3 h-3 text-white" strokeWidth={3} />
                               )}
                             </div>
 
                             <div className="flex-1">
-                              <div className={`font-medium ${
-                                isChecked 
+                              <div className={`font-medium ${isChecked
                                   ? isDark ? 'text-emerald-400 line-through' : 'text-emerald-700 line-through'
                                   : isDark ? 'text-white' : 'text-gray-900'
-                              }`}>
+                                }`}>
                                 {item.original}
                               </div>
                               {item.count > 1 && (
-                                <div className={`text-xs mt-1 ${
-                                  isDark ? 'text-gray-500' : 'text-gray-600'
-                                }`}>
+                                <div className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'
+                                  }`}>
                                   Needed for {item.count} {item.count === 1 ? 'meal' : 'meals'}
                                 </div>
                               )}
