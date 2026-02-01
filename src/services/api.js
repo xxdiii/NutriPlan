@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://nutriplan-kore.onrender.com';
 
 const handleResponse = async (response) => {
     if (!response.ok) {
