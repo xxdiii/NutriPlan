@@ -1,4 +1,4 @@
-const API_URL = 'https://nutriplan-kore.onrender.com';
+const API_URL = 'http://localhost:3000/api';
 
 const handleResponse = async (response) => {
     if (!response.ok) {
@@ -125,6 +125,26 @@ export const api = {
         const res = await fetch(`${API_URL}/weight-logs/${logId}`, {
             method: 'DELETE',
             headers: getHeaders()
+        });
+        return handleResponse(res);
+    },
+
+    // Hydration
+    getHydration: async (date) => {
+        // date string YYYY-MM-DD
+        const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+        const res = await fetch(`${API_URL}/hydration/${dateStr}`, {
+            headers: getHeaders()
+        });
+        return handleResponse(res);
+    },
+
+    updateHydration: async (date, amount) => {
+        const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+        const res = await fetch(`${API_URL}/hydration`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ date: dateStr, amount })
         });
         return handleResponse(res);
     }

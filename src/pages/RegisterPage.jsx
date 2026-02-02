@@ -17,10 +17,14 @@ const RegisterPage = ({ setCurrentPage }) => {
         setError('');
         setLoading(true);
         try {
-            await register(name, email, password);
-            setCurrentPage('onboarding'); // Redirect to onboarding after register
+            const result = await register(name, email, password);
+            if (result.success) {
+                setCurrentPage('onboarding'); // Redirect to onboarding after register
+            } else {
+                setError(result.error || 'Registration failed. Email might be taken.');
+            }
         } catch (err) {
-            setError('Registration failed. Email might be taken.');
+            setError('An unexpected error occurred');
         } finally {
             setLoading(false);
         }

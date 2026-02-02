@@ -91,7 +91,7 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
         </div>
 
         {/* Nutrition Info */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           <div className={`p-2 rounded-lg text-center ${isDark ? 'bg-orange-900/30' : 'bg-orange-50'
             }`}>
             <Flame className={`w-4 h-4 mx-auto mb-1 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
@@ -110,7 +110,7 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
               {meal.protein}g
             </div>
             <div className={`text-xs ${isDark ? 'text-blue-500' : 'text-blue-600'}`}>
-              protein
+              prot
             </div>
           </div>
 
@@ -121,13 +121,13 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
               {meal.carbs}g
             </div>
             <div className={`text-xs ${isDark ? 'text-green-500' : 'text-green-600'}`}>
-              carbs
+              carb
             </div>
           </div>
 
           <div className={`p-2 rounded-lg text-center ${isDark ? 'bg-yellow-900/30' : 'bg-yellow-50'
             }`}>
-            <div className={`text-lg mb-1 ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
+            <div className={`text-lg mb-1 leading-none ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
               💧
             </div>
             <div className={`text-sm font-bold ${isDark ? 'text-yellow-400' : 'text-yellow-700'}`}>
@@ -145,8 +145,8 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
             <span
               key={idx}
               className={`text-xs px-2 py-1 rounded-full ${isDark
-                  ? 'bg-gray-700 text-gray-300'
-                  : 'bg-gray-100 text-gray-700'
+                ? 'bg-gray-700 text-gray-300'
+                : 'bg-gray-100 text-gray-700'
                 }`}
             >
               {tag}
@@ -162,8 +162,8 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
               onViewRecipe && onViewRecipe(meal, mealType)
             }}
             className={`flex-1 px-4 py-2 rounded-xl font-medium transition-all ${isDark
-                ? 'bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50'
-                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+              ? 'bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50'
+              : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
               }`}
           >
             View Recipe
@@ -171,8 +171,8 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
           <button
             onClick={() => onSwap && onSwap(mealType)}
             className={`px-4 py-2 rounded-xl font-medium transition-all ${isDark
-                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
           >
             <RefreshCw className="w-4 h-4" />

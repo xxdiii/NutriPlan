@@ -16,10 +16,14 @@ const LoginPage = ({ setCurrentPage }) => {
         setError('');
         setLoading(true);
         try {
-            await login(email, password);
-            setCurrentPage('dashboard');
+            const result = await login(email, password);
+            if (result.success) {
+                setCurrentPage('dashboard');
+            } else {
+                setError(result.error || 'Invalid email or password');
+            }
         } catch (err) {
-            setError('Invalid email or password');
+            setError('An unexpected error occurred');
         } finally {
             setLoading(false);
         }

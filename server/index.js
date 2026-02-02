@@ -258,6 +258,55 @@ app.delete('/api/weight-logs/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// 6. Hydration (Protected)
+app.get('/api/hydration/:date', authenticateToken, async (req, res) => {
+    try {
+        const { date } = req.params;
+        const log = await prisma.hydrationLog.findFirst({
+            where: {
+                userId: req.user.id,
+                date: date
+            }
+        });
+        res.json(log || { amount: 0, date });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/hydration', authenticateToken, async (req, res) => {
+    try {
+        const { date, amount } = req.body; // date YYYY-MM-DD
+
+        // Find existing log for this date or create new
+        const existingLog = await prisma.hydrationLog.findFirst({
+            where: {
+                userId: req.user.id,
+                date: date
+            }
+        });
+
+        let log;
+        if (existingLog) {
+            log = await prisma.hydrationLog.update({
+                where: { id: existingLog.id },
+                data: { amount: parseInt(amount) }
+            });
+        } else {
+            log = await prisma.hydrationLog.create({
+                data: {
+                    userId: req.user.id,
+                    date: date,
+                    amount: parseInt(amount)
+                }
+            });
+        }
+        res.json(log);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

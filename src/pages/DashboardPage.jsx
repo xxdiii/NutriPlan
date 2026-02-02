@@ -3,8 +3,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Utensils, Moon, Sun, User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight } from 'lucide-react';
 import { createAndSaveMealPlan } from '../services/mealPlanGenerator';
 import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
-import { getTodayCompliance, getWeeklyCompliance, calculateStreak, getComplianceForDate } from '../services/complianceService';
+import { getTodayCompliance, getWeeklyCompliance, calculateStreak, calculateCombinedStreak, getComplianceForDate } from '../services/complianceService';
 import { api } from '../services/api';
+import HydrationTracker from '../components/dashboard/HydrationTracker';
+import NextMealCard from '../components/dashboard/NextMealCard';
 
 const DashboardPage = ({ setCurrentPage }) => {
   const { isDark, toggleTheme } = useTheme();
@@ -65,7 +67,7 @@ const DashboardPage = ({ setCurrentPage }) => {
         // So 'getWeeklyCompliance' will fail if data is only in backend.
         // TODO: Fully migrate compliance service.
 
-        const currentStreak = calculateStreak();
+        const currentStreak = await calculateCombinedStreak(api);
         const weekly = getWeeklyCompliance();
         setStreak(currentStreak);
         setWeeklyCompliance(weekly);
@@ -247,7 +249,7 @@ const DashboardPage = ({ setCurrentPage }) => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Daily Calories */}
           <div className={`p-6 rounded-2xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
             }`}>
@@ -351,6 +353,19 @@ const DashboardPage = ({ setCurrentPage }) => {
                 </span>
               )}
             </p>
+          </div>
+
+          {/* Hydration Tracker */}
+          <div>
+            <HydrationTracker />
+          </div>
+
+          {/* Next Meal Card */}
+          <div>
+            <NextMealCard
+              todaysMeals={todaysMeals}
+              onViewRecipe={handleViewRecipe}
+            />
           </div>
         </div>
 
@@ -617,7 +632,7 @@ const DashboardPage = ({ setCurrentPage }) => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />
-    </div>
+    </div >
   );
 };
 
