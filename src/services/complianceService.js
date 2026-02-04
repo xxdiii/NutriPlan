@@ -1,10 +1,35 @@
 // Compliance tracking service for meal plan adherence
 
 /**
+ * Helper to get user-specific storage key
+ */
+const getStorageKey = () => {
+  try {
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (userProfile.id) {
+      return `mealCompliance_${userProfile.id}`;
+    }
+
+    // Fallback: Check 'user' key from AuthContext
+    const authUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (authUser.id) {
+      return `mealCompliance_${authUser.id}`;
+    }
+
+    // Fallback for legacy or guest
+    // NEW: Use a guest key that doesn't share history with the dev/legacy data
+    return 'mealCompliance_guest';
+  } catch (e) {
+    return 'mealCompliance_guest';
+  }
+};
+
+/**
  * Get compliance data for a specific date
  */
 export const getComplianceForDate = (date) => {
-  const complianceData = JSON.parse(localStorage.getItem('mealCompliance') || '{}');
+  const key = getStorageKey();
+  const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
   const dateKey = typeof date === 'string' ? date : date.toISOString().split('T')[0];
   return complianceData[dateKey] || {
     date: dateKey,
@@ -22,7 +47,8 @@ export const getComplianceForDate = (date) => {
  * Mark a meal as completed or skipped
  */
 export const markMealCompliance = (date, mealType, status) => {
-  const complianceData = JSON.parse(localStorage.getItem('mealCompliance') || '{}');
+  const key = getStorageKey();
+  const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
   const dateKey = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
   if (!complianceData[dateKey]) {
@@ -41,7 +67,13 @@ export const markMealCompliance = (date, mealType, status) => {
   complianceData[dateKey].meals[mealType] = status; // 'eaten', 'skipped', or null
   complianceData[dateKey].lastUpdated = new Date().toISOString();
 
-  localStorage.setItem('mealCompliance', JSON.stringify(complianceData));
+  localStorage.setItem(key, JSON.stringify(complianceData));
+
+  // Dispatch event to notify other components (like Dashboard)
+  window.dispatchEvent(new CustomEvent('meal-compliance-update', {
+    detail: { date: dateKey, mealType, status }
+  }));
+
   return complianceData[dateKey];
 };
 
@@ -49,7 +81,8 @@ export const markMealCompliance = (date, mealType, status) => {
  * Get compliance statistics for a date range
  */
 export const getComplianceStats = (startDate, endDate) => {
-  const complianceData = JSON.parse(localStorage.getItem('mealCompliance') || '{}');
+  const key = getStorageKey();
+  const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
   const start = new Date(startDate);
   const end = new Date(endDate);
 
@@ -116,7 +149,8 @@ export const getComplianceStats = (startDate, endDate) => {
  * Returns a promise since hydration data is async
  */
 export const calculateCombinedStreak = async (api) => {
-  const complianceData = JSON.parse(localStorage.getItem('mealCompliance') || '{}');
+  const key = getStorageKey();
+  const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -173,7 +207,8 @@ export const calculateCombinedStreak = async (api) => {
  * Legacy synchronous version
  */
 export const calculateStreak = () => {
-  const complianceData = JSON.parse(localStorage.getItem('mealCompliance') || '{}');
+  const key = getStorageKey();
+  const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

@@ -26,9 +26,52 @@ const MealPlanPage = ({ setCurrentPage }) => {
     const userServings = userProfile.servings || 1;
 
     // 2. Fetch Meal Plan
-    const planData = await api.getMealPlan();
+    let planData = null;
+    try {
+      planData = await api.getMealPlan();
+    } catch (error) {
+      console.warn('Could not fetch API plan', error);
+    }
 
-    if (planData) {
+    const localPlanStr = localStorage.getItem('weeklyMealPlan');
+    const localPlan = localPlanStr ? JSON.parse(localPlanStr) : null;
+    let finalPlan = null;
+
+    if (planData && localPlan) {
+      const apiDate = new Date(planData.createdAt).getTime();
+      const localDate = new Date(localPlan.createdAt).getTime();
+
+      if (apiDate > localDate + 60000) {
+        // API is newer, use it
+        finalPlan = planData.plan;
+        // Update local to match strict new server plan
+        localStorage.setItem('weeklyMealPlan', JSON.stringify(planData));
+      } else {
+        // Local is newer or same (contains swaps), use it
+        // We assume local is already hydrated/valid since it was saved by the app
+        finalPlan = localPlan.plan;
+      }
+    } else if (localPlan) {
+      finalPlan = localPlan.plan;
+    } else if (planData) {
+      finalPlan = planData.plan;
+      localStorage.setItem('weeklyMealPlan', JSON.stringify(planData));
+    }
+
+    if (finalPlan) {
+      // If we used the API plan (or if local plan needs hydration check), we flow through here.
+      // However, if we took 'localPlan.plan', it's already an array.
+      // The hydration logic below expects 'planData.plan', but we have 'finalPlan'.
+      // If we came from Local, we might skip the heavy hydration or apply it if needed.
+      // EXISTING hydration logic was destructive (overwriting dates). 
+      // Safe bet: If coming from API, run hydration. If from Local, trust it.
+
+      if (finalPlan === localPlan?.plan) {
+        setWeekPlan(finalPlan);
+        setIsLoading(false);
+        return;
+      }
+
       // Create a map of all recipes for quick lookup
       const allRecipes = [...breakfastRecipes, ...lunchRecipes, ...dinnerRecipes, ...snackRecipes];
       const recipeMap = allRecipes.reduce((acc, recipe) => {
@@ -61,7 +104,7 @@ const MealPlanPage = ({ setCurrentPage }) => {
         };
       };
 
-      const hydratedPlan = planData.plan.map((day, index) => {
+      const hydratedPlan = finalPlan.map((day, index) => {
         // Calculate dynamic date
         const currentDate = new Date(today);
         currentDate.setDate(today.getDate() + index);
@@ -96,19 +139,19 @@ const MealPlanPage = ({ setCurrentPage }) => {
 
       setWeekPlan(hydratedPlan);
       setIsLoading(false);
+      // We hydrated the API plan, so lets save this "clean" version to local storage to persist the dates we just set
+      // to avoid date shifting on every reload if possible, or just to have a valid local base.
+      const newLocalObj = {
+        plan: hydratedPlan,
+        createdAt: planData?.createdAt || new Date().toISOString()
+      };
+      localStorage.setItem('weeklyMealPlan', JSON.stringify(newLocalObj));
+
     } else {
       // Fallback to localStorage if API failed/empty? or Generate new.
       // Let's check localStorage as fallback
-      const savedPlanLocal = localStorage.getItem('weeklyMealPlan');
-      if (savedPlanLocal) {
-        // If local exists but API didn't, maybe we should save it to API?
-        // For now, just load it.
-        // ... (Existing logic could be reused but simplifying to just generate new if API fails for now to enforce backend usage)
-        // Actually, let's just generate new 
-        generateNewPlan();
-      } else {
-        generateNewPlan();
-      }
+      // (Handled above in if/else blocks, if we are here both were null)
+      generateNewPlan();
     }
   };
 
@@ -127,6 +170,12 @@ const MealPlanPage = ({ setCurrentPage }) => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       const newPlan = await createAndSaveMealPlan(userProfile);
       setWeekPlan(newPlan);
+
+      const planObj = {
+        plan: newPlan,
+        createdAt: new Date().toISOString()
+      };
+      localStorage.setItem('weeklyMealPlan', JSON.stringify(planObj));
     } catch (error) {
       console.error('Failed to generate meal plan:', error);
       alert('Failed to generate meal plan. Please try again.');
@@ -191,6 +240,10 @@ const MealPlanPage = ({ setCurrentPage }) => {
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
+                onClick={() => {
+                  localStorage.setItem('returnPage', 'mealplan');
+                  setCurrentPage('profile');
+                }}
                 className={`p-2.5 rounded-xl transition-all duration-300 ${isDark
                   ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

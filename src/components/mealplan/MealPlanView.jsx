@@ -119,8 +119,8 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
     savedPlan.plan = updatedWeekPlan;
     localStorage.setItem('weeklyMealPlan', JSON.stringify(savedPlan));
 
-    // Close modal
-    setIsSwapModalOpen(false);
+    // Modal will callback onClose after animation
+    // setIsSwapModalOpen(false);
   };
 
   const handleViewRecipe = (recipe, mealType) => {

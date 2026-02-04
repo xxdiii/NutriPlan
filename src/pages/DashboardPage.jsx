@@ -21,6 +21,7 @@ const DashboardPage = ({ setCurrentPage }) => {
   const [streak, setStreak] = useState(0);
   const [weeklyCompliance, setWeeklyCompliance] = useState(null);
   const [consumedStats, setConsumedStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const [complianceUpdateTrigger, setComplianceUpdateTrigger] = useState(0);
 
   const handleViewRecipe = (recipe, mealType) => {
     setSelectedRecipe(recipe);
@@ -33,6 +34,15 @@ const DashboardPage = ({ setCurrentPage }) => {
     setSelectedRecipe(null);
     setSelectedMealType(null);
   };
+
+  useEffect(() => {
+    const handleComplianceUpdate = () => {
+      setComplianceUpdateTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('meal-compliance-update', handleComplianceUpdate);
+    return () => window.removeEventListener('meal-compliance-update', handleComplianceUpdate);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,15 +61,37 @@ const DashboardPage = ({ setCurrentPage }) => {
         }
 
         // 2. Load Meal Plan
-        const plan = await api.getMealPlan();
-        if (plan) {
-          setMealPlan(plan);
-        } else {
-          const localPlan = localStorage.getItem('weeklyMealPlan');
-          if (localPlan) setMealPlan(JSON.parse(localPlan));
+        let apiPlan = null;
+        try {
+          apiPlan = await api.getMealPlan();
+        } catch (error) {
+          console.warn('Could not fetch API plan', error);
         }
 
-        // 3. Load Compliance (Still hybrid for now, but fetching today from API)
+        const localPlanStr = localStorage.getItem('weeklyMealPlan');
+        const localPlan = localPlanStr ? JSON.parse(localPlanStr) : null;
+
+        if (apiPlan && localPlan) {
+          // Compare dates to see if server has a freshly generated plan
+          const apiDate = new Date(apiPlan.createdAt).getTime();
+          const localDate = new Date(localPlan.createdAt).getTime();
+
+          // If API plan is strictly newer (by > 1 minute to avoid drift), take it
+          // Otherwise trust local (which may have swaps)
+          if (apiDate > localDate + 60000) {
+            setMealPlan(apiPlan);
+            localStorage.setItem('weeklyMealPlan', JSON.stringify(apiPlan));
+          } else {
+            setMealPlan(localPlan);
+          }
+        } else if (localPlan) {
+          setMealPlan(localPlan);
+        } else if (apiPlan) {
+          setMealPlan(apiPlan);
+          localStorage.setItem('weeklyMealPlan', JSON.stringify(apiPlan));
+        }
+
+        // 3. Load Compliance
         // Note: complianceService still uses localStorage. Ideally refactor that too.
         // For dashboard display, we can iterate complianceService logic or migrate it wholly.
         // To keep it simple, we let complianceService read from localStorage which is OK for now
@@ -78,7 +110,6 @@ const DashboardPage = ({ setCurrentPage }) => {
         if (localDetails) {
           setUserProfile(JSON.parse(localDetails));
         }
-        // If no profile, that's okay - dashboard will handle it gracefully
 
         const localPlan = localStorage.getItem('weeklyMealPlan');
         if (localPlan) setMealPlan(JSON.parse(localPlan));
@@ -87,7 +118,7 @@ const DashboardPage = ({ setCurrentPage }) => {
       }
     };
     loadData();
-  }, []);
+  }, [complianceUpdateTrigger]);
 
   // Calculate consumed stats whenever meal plan or valid user profile loads
   useEffect(() => {
@@ -115,7 +146,7 @@ const DashboardPage = ({ setCurrentPage }) => {
       });
       setConsumedStats(stats);
     }
-  }, [mealPlan]);
+  }, [mealPlan, complianceUpdateTrigger]);
 
   const handleGenerateMealPlan = async () => {
     setIsGenerating(true);
@@ -125,10 +156,13 @@ const DashboardPage = ({ setCurrentPage }) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const newPlan = await createAndSaveMealPlan(userProfile);
-      setMealPlan({
+      const planObj = {
         plan: newPlan,
         createdAt: new Date().toISOString()
-      });
+      };
+
+      setMealPlan(planObj);
+      localStorage.setItem('weeklyMealPlan', JSON.stringify(planObj));
     } catch (error) {
       console.error('Failed to generate meal plan:', error);
       alert('Failed to generate meal plan. Please try again.');
@@ -564,65 +598,6 @@ const DashboardPage = ({ setCurrentPage }) => {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className={`p-6 rounded-2xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-              }`}>
-              <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Quick Actions
-              </h2>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() => mealPlan && setCurrentPage('mealplan')}
-                  disabled={!mealPlan}
-                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${mealPlan
-                    ? isDark
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
-                    }`}
-                >
-                  📅 View Full Meal Plan
-                </button>
-                <button
-                  onClick={() => setCurrentPage('progress')}
-                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                >
-                  📊 View Progress
-                </button>
-                <button
-                  onClick={() => mealPlan && setCurrentPage('shopping')}
-                  disabled={!mealPlan}
-                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${mealPlan
-                    ? isDark
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
-                    }`}
-                >
-                  🛒 Shopping List
-                </button>
-                <button
-                  onClick={() => setCurrentPage('recipes')}
-                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}>
-                  📖 Browse Recipes
-                </button>
-                <button
-                  onClick={() => setCurrentPage('settings')}
-                  className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all ${isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}>
-                  ⚙️ Settings
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

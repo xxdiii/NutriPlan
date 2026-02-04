@@ -217,7 +217,11 @@ const ProfilePage = ({ setCurrentPage }) => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <button
-                                onClick={() => setCurrentPage('dashboard')}
+                                onClick={() => {
+                                    const returnPage = localStorage.getItem('returnPage') || 'dashboard';
+                                    localStorage.removeItem('returnPage'); // Clear after use
+                                    setCurrentPage(returnPage);
+                                }}
                                 className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
                                     }`}
                             >

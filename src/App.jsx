@@ -12,6 +12,7 @@ import ProfilePage from './pages/ProfilePage';
 import RecipePage from './pages/RecipePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import NavigationLayout from './components/layout/NavigationLayout';
 
 // Inner component to handle routing with auth access
 const AppRoutes = () => {
@@ -83,25 +84,32 @@ const AppRoutes = () => {
       return <LoginPage setCurrentPage={setCurrentPage} />;
     }
 
+    // Wrap all protected routes in NavigationLayout
+    const LayoutWrapper = ({ children }) => (
+      <NavigationLayout currentPage={currentPage} setCurrentPage={setCurrentPage}>
+        {children}
+      </NavigationLayout>
+    );
+
     switch (currentPage) {
       case 'onboarding':
         return <OnboardingPage setCurrentPage={setCurrentPage} />;
       case 'dashboard':
-        return <DashboardPage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><DashboardPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       case 'mealplan':
-        return <MealPlanPage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><MealPlanPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       case 'shopping':
-        return <ShoppingPage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><ShoppingPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       case 'progress':
-        return <ProgressPage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><ProgressPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       case 'settings':
-        return <SettingsPage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><SettingsPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       case 'profile':
-        return <ProfilePage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><ProfilePage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       case 'recipes':
-        return <RecipePage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><RecipePage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       default:
-        return <DashboardPage setCurrentPage={setCurrentPage} />;
+        return <LayoutWrapper><DashboardPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
     }
   };
 
