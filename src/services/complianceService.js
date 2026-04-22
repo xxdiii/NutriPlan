@@ -264,3 +264,38 @@ export const getTodayCompliance = () => {
   const today = new Date().toISOString().split('T')[0];
   return getComplianceForDate(today);
 };
+
+/**
+ * Per-meal compliance % for the current week (Sun → today).
+ * Returns { breakfast, lunch, snack, dinner } as 0-100 integers.
+ */
+export const getWeeklyMealBreakdown = () => {
+  const key = getStorageKey();
+  const allData = JSON.parse(localStorage.getItem(key) || '{}');
+
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const counts = { breakfast: 0, lunch: 0, snack: 0, dinner: 0 };
+  const days   = { breakfast: 0, lunch: 0, snack: 0, dinner: 0 };
+
+  for (let i = 0; i <= today.getDay(); i++) {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+    const dateKey = d.toISOString().split('T')[0];
+    const dayData = allData[dateKey];
+    ['breakfast', 'lunch', 'snack', 'dinner'].forEach(m => {
+      days[m]++;
+      if (dayData?.meals?.[m] === 'eaten') counts[m]++;
+    });
+  }
+
+  return {
+    breakfast: days.breakfast > 0 ? Math.round((counts.breakfast / days.breakfast) * 100) : 0,
+    lunch:     days.lunch     > 0 ? Math.round((counts.lunch     / days.lunch)     * 100) : 0,
+    snack:     days.snack     > 0 ? Math.round((counts.snack     / days.snack)     * 100) : 0,
+    dinner:    days.dinner    > 0 ? Math.round((counts.dinner    / days.dinner)    * 100) : 0,
+  };
+};

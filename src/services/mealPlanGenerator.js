@@ -9,11 +9,18 @@ import { getMedicationFoodWarnings } from '../utils/constraints/medicationIntera
 
 // More lenient filter - strict on allergies, warn on clinical/medication signals
 const filterRecipes = (recipes, userProfile) => {
+  // Build disliked recipe ID set for fast lookup
+  const dislikedIds = new Set(
+    (userProfile.dislikedRecipes || []).map(id => String(id))
+  );
+
   return recipes.filter(recipe => {
+    // ADAPTIVE: Skip disliked recipes (user feedback loop)
+    if (dislikedIds.has(String(recipe.id))) return false;
+
     // STRICT: Check allergies (safety-critical)
     const allergyBlocks = checkAllergyViolations(recipe, userProfile);
     if (allergyBlocks.length > 0) {
-      // console.log(`Filtered out ${recipe.name} due to allergy`, allergyBlocks.map(v => v.code));
       return false;
     }
 
@@ -35,7 +42,6 @@ const filterRecipes = (recipes, userProfile) => {
     // non_veg can eat everything
 
     // Attach explainability metadata
-    // NOTE: safe to mutate here because we consider these transient findings for this session
     const healthFindings = getHealthConstraintFindings(recipe, userProfile);
     const medFindings = getMedicationFoodWarnings(recipe, userProfile);
     recipe.__constraints = {

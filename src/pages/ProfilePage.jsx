@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import {
     ArrowLeft, User, Ruler, Weight, Calendar, Activity, Save, X, Edit2,
-    Heart, AlertCircle, Pill, Leaf, Globe, ChefHat, ThumbsDown, DollarSign, MapPin, Package, Info
+    Heart, AlertCircle, Pill, Leaf, Globe, ChefHat, ThumbsDown, DollarSign, MapPin, Package, Info, Clock, Flame
 } from 'lucide-react';
 import { calculateTDEE, calculateTargetCalories } from '../utils/calculations/tdee';
 import { calculateMacros } from '../utils/calculations/macros';
@@ -11,6 +11,7 @@ import {
     BUDGET_RANGES, INDIAN_STATES, HEALTH_CONDITIONS, ALLERGENS, DIETARY_PREFERENCES, CUISINES, ACTIVITY_LEVELS, GOALS
 } from '../utils/constants';
 import { api } from '../services/api';
+import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
 
 const ProfilePage = ({ setCurrentPage }) => {
     const { isDark } = useTheme();
@@ -18,6 +19,10 @@ const ProfilePage = ({ setCurrentPage }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
     const [isLoading, setIsLoading] = useState(true);
+    const [favorites, setFavorites] = useState([]);
+    const [selectedRecipe, setSelectedRecipe] = useState(null);
+    const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
+    const [loadingFavorites, setLoadingFavorites] = useState(false);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -50,7 +55,27 @@ const ProfilePage = ({ setCurrentPage }) => {
             }
         };
         loadProfile();
+        loadFavorites();
     }, []);
+
+    const loadFavorites = async () => {
+        setLoadingFavorites(true);
+        try {
+            const favs = await api.getFavorites();
+            setFavorites(favs || []);
+        } catch (error) {
+            console.error('Error loading favorites:', error);
+        } finally {
+            setLoadingFavorites(false);
+        }
+    };
+
+    // Refresh favorites when modal closes in case status changed
+    const handleCloseModal = () => {
+        setIsRecipeModalOpen(false);
+        setSelectedRecipe(null);
+        loadFavorites();
+    };
 
     const handleSave = async () => {
         // Recalculate targets based on new weight/goal
@@ -573,7 +598,110 @@ const ProfilePage = ({ setCurrentPage }) => {
                     </div>
 
                 </div>
+
+                {/* 4.5 Nutrition Targets (read-only — from BMR/TDEE calculation) */}
+                {userProfile.nutritionTargets && (() => {
+                    const nt = userProfile.nutritionTargets;
+                    const bmr = Math.round(nt.tdee / (userProfile.activityLevel || 1.55));
+                    return (
+                        <div className={`p-6 rounded-2xl shadow-sm ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                            <SectionHeader icon={Flame} title="Nutrition Targets" description="Calculated via Mifflin-St Jeor equation based on your stats" />
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                {[
+                                    { label: 'BMR', value: `${bmr}`, unit: 'kcal/day', desc: 'Resting metabolism', color: isDark ? 'text-orange-400' : 'text-orange-600', bg: isDark ? 'bg-orange-900/20' : 'bg-orange-50' },
+                                    { label: 'TDEE', value: `${Math.round(nt.tdee)}`, unit: 'kcal/day', desc: 'With activity level', color: isDark ? 'text-blue-400' : 'text-blue-600', bg: isDark ? 'bg-blue-900/20' : 'bg-blue-50' },
+                                    { label: 'Target', value: `${Math.round(nt.targetCalories)}`, unit: 'kcal/day', desc: `For ${userProfile.goal || 'goal'}`, color: isDark ? 'text-emerald-400' : 'text-emerald-600', bg: isDark ? 'bg-emerald-900/20' : 'bg-emerald-50' },
+                                    { label: 'Deficit/Surplus', value: `${Math.round(nt.targetCalories) > Math.round(nt.tdee) ? '+' : ''}${Math.round(nt.targetCalories - nt.tdee)}`, unit: 'kcal/day', desc: 'vs TDEE', color: isDark ? 'text-purple-400' : 'text-purple-600', bg: isDark ? 'bg-purple-900/20' : 'bg-purple-50' },
+                                ].map(({ label, value, unit, desc, color, bg }) => (
+                                    <div key={label} className={`p-4 rounded-xl ${bg}`}>
+                                        <div className={`text-xs font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{label}</div>
+                                        <div className={`text-2xl font-bold leading-none ${color}`}>{value}</div>
+                                        <div className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{unit}</div>
+                                        <div className={`text-xs mt-0.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{desc}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Macro targets */}
+                            {nt.macros && (
+                                <div>
+                                    <div className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Daily Macro Targets</div>
+                                    <div className="flex flex-wrap gap-3">
+                                        {[
+                                            { label: 'Protein', value: nt.macros.protein, color: 'var(--color-brand)', bg: isDark ? 'bg-green-900/20' : 'bg-green-50' },
+                                            { label: 'Carbohydrates', value: nt.macros.carbs, color: 'oklch(60% 0.18 52)', bg: isDark ? 'bg-yellow-900/20' : 'bg-yellow-50' },
+                                            { label: 'Fat', value: nt.macros.fat, color: 'oklch(55% 0.14 30)', bg: isDark ? 'bg-red-900/20' : 'bg-red-50' },
+                                        ].map(({ label, value, color, bg }) => (
+                                            <div key={label} className={`flex-1 min-w-24 p-3 rounded-xl ${bg} flex flex-col items-center`}>
+                                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.4rem', color, lineHeight: 1 }}>{value}g</span>
+                                                <span className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className={`text-xs mt-3 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                                        These targets update automatically when you edit your physical stats or goal.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
+
+                {/* 5. Saved Recipes */}
+                <div className={`p-6 rounded-2xl shadow-sm ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                    <SectionHeader icon={Heart} title="Saved Recipes" description="Your collection of favorite meals" />
+
+                    {loadingFavorites ? (
+                        <div className="text-center py-6">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                        </div>
+                    ) : favorites.length === 0 ? (
+                        <div className={`text-center py-8 rounded-xl border-2 border-dashed ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                            <Heart className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+                            <h4 className={`text-lg font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>No saved recipes yet</h4>
+                            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                                Explore the meal plan and save your favorites!
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {favorites.map((fav) => {
+                                const recipe = fav.recipe;
+                                return (
+                                    <div
+                                        key={fav.id}
+                                        onClick={() => { setSelectedRecipe(recipe); setIsRecipeModalOpen(true); }}
+                                        className={`group cursor-pointer rounded-xl overflow-hidden transition-all hover:shadow-lg ${isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-white border border-gray-100'}`}
+                                    >
+                                        <div className="relative h-40 overflow-hidden">
+                                            <img
+                                                src={recipe.imageUrl || `https://via.placeholder.com/400x300?text=${recipe.name}`}
+                                                alt={recipe.name}
+                                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
+                                            <div className="absolute bottom-2 left-3 right-3">
+                                                <h4 className="text-white font-bold truncate text-shadow-sm">{recipe.name}</h4>
+                                                <div className="flex items-center text-xs text-white/90 space-x-2 mt-1">
+                                                    <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {recipe.prepTime + recipe.cookTime}m</span>
+                                                    <span className="flex items-center"><Flame className="w-3 h-3 mr-1" /> {recipe.calories}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Recipe Modal */}
+            <RecipeDetailModal
+                recipe={selectedRecipe}
+                isOpen={isRecipeModalOpen}
+                onClose={handleCloseModal}
+                mealType="favorite"
+            />
         </div>
     );
 };

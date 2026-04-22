@@ -7,7 +7,7 @@ const handleResponse = async (response) => {
             // window.location.reload(); // excessive, maybe just let app handle it
         }
         const error = await response.json().catch(() => ({ message: 'Something went wrong' }));
-        throw new Error(error.message || 'API Error');
+        throw new Error(error.message || error.error || 'API Error');
     }
     return response.json();
 };
@@ -145,6 +145,34 @@ export const api = {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ date: dateStr, amount })
+        });
+        return handleResponse(res);
+    },
+
+    // Favorites
+    getFavorites: async () => {
+        console.log('Fetching favorites...');
+        const res = await fetch(`${API_URL}/favorites`, {
+            headers: getHeaders()
+        });
+        return handleResponse(res);
+    },
+
+    addFavorite: async (recipe) => {
+        console.log('Adding favorite:', recipe.id);
+        const res = await fetch(`${API_URL}/favorites`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(recipe)
+        });
+        return handleResponse(res);
+    },
+
+    removeFavorite: async (recipeId) => {
+        console.log('Removing favorite:', recipeId);
+        const res = await fetch(`${API_URL}/favorites/${recipeId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
         });
         return handleResponse(res);
     }

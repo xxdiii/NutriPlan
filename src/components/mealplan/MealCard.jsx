@@ -1,9 +1,32 @@
-import React from 'react';
-import { Clock, ChefHat, Users, Flame, Target, TrendingUp, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, ChefHat, Users, Flame, Target, TrendingUp, RefreshCw, ThumbsDown } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
   const { isDark } = useTheme();
+  const [disliked, setDisliked] = useState(() => {
+    try {
+      const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      return (profile.dislikedRecipes || []).includes(meal?.id);
+    } catch { return false; }
+  });
+
+  const handleDislike = () => {
+    if (!meal) return;
+    // Persist dislike to localStorage profile
+    try {
+      const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      const dislikes = new Set(profile.dislikedRecipes || []);
+      dislikes.add(String(meal.id));
+      const updated = { ...profile, dislikedRecipes: [...dislikes] };
+      localStorage.setItem('userProfile', JSON.stringify(updated));
+      // Best-effort API save (non-blocking)
+      import('../../services/api').then(({ api }) => api.saveUserProfile(updated)).catch(() => {});
+    } catch (_) {}
+    setDisliked(true);
+    // Trigger swap immediately
+    onSwap && onSwap(mealType);
+  };
 
   if (!meal) {
     return (
@@ -158,7 +181,6 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
         <div className="flex gap-2">
           <button
             onClick={() => {
-              console.log('View Recipe clicked', meal, mealType);
               onViewRecipe && onViewRecipe(meal, mealType)
             }}
             className={`flex-1 px-4 py-2 rounded-xl font-medium transition-all ${isDark
@@ -170,12 +192,24 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
           </button>
           <button
             onClick={() => onSwap && onSwap(mealType)}
-            className={`px-4 py-2 rounded-xl font-medium transition-all ${isDark
+            title="Swap meal"
+            className={`px-3 py-2 rounded-xl font-medium transition-all ${isDark
               ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleDislike}
+            title={disliked ? 'Already marked as disliked' : "Dislike — swap & never show again"}
+            className={`px-3 py-2 rounded-xl font-medium transition-all ${
+              disliked
+                ? isDark ? 'bg-red-900/40 text-red-400 cursor-default' : 'bg-red-50 text-red-500 cursor-default'
+                : isDark ? 'bg-gray-700 text-gray-400 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'
+              }`}
+          >
+            <ThumbsDown className="w-4 h-4" />
           </button>
         </div>
       </div>

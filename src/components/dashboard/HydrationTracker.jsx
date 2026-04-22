@@ -3,6 +3,15 @@ import { Droplet, Plus, Minus } from 'lucide-react';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
+// Returns YYYY-MM-DD in the user's LOCAL timezone (not UTC)
+const getLocalDateStr = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+};
+
 const HydrationTracker = () => {
     const { isDark } = useTheme();
     const [hydration, setHydration] = useState(0);
@@ -15,13 +24,23 @@ const HydrationTracker = () => {
 
     const loadHydration = async () => {
         try {
-            const today = new Date();
-            const data = await api.getHydration(today);
-            if (data) {
+            const todayStr = getLocalDateStr();
+            const data = await api.getHydration(todayStr);
+            if (data && typeof data.amount === 'number') {
                 setHydration(data.amount);
+                // Keep localStorage in sync as fallback
+                localStorage.setItem(`hydration_${todayStr}`, String(data.amount));
+            } else {
+                // Fallback to localStorage if API returns nothing
+                const cached = localStorage.getItem(`hydration_${todayStr}`);
+                if (cached) setHydration(Number(cached));
             }
         } catch (error) {
             console.error('Error loading hydration:', error);
+            // Fallback: read from localStorage
+            const todayStr = getLocalDateStr();
+            const cached = localStorage.getItem(`hydration_${todayStr}`);
+            if (cached) setHydration(Number(cached));
         } finally {
             setIsLoading(false);
         }
@@ -32,11 +51,12 @@ const HydrationTracker = () => {
             const newAmount = Math.max(0, hydration + amount);
             setHydration(newAmount); // Optimistic update
 
-            const today = new Date();
-            await api.updateHydration(today, newAmount);
+            const todayStr = getLocalDateStr();
+            localStorage.setItem(`hydration_${todayStr}`, String(newAmount)); // Always persist locally
+            await api.updateHydration(todayStr, newAmount);
         } catch (error) {
             console.error('Error updating hydration:', error);
-            // Revert on error if needed, but for now simple optimistic is fine
+            // State already updated optimistically; localStorage is also saved — no revert needed
         }
     };
 

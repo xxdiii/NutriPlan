@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { jsPDF } from "jspdf";
 import { RefreshCw, Download, Share2, ShoppingCart } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import WeeklyCalendar from './WeeklyCalendar';
@@ -11,7 +12,20 @@ import { getComplianceForDate } from '../../services/complianceService';
 
 const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
   const { isDark } = useTheme();
-  const [selectedDay, setSelectedDay] = useState(0);
+  // Find index of today's date in the plan, default to 0
+  const getInitialDay = () => {
+    if (!weekPlan) return 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const index = weekPlan.findIndex(day => day.date === todayStr);
+    return index >= 0 ? index : 0;
+  };
+
+  const [selectedDay, setSelectedDay] = useState(getInitialDay());
+
+  // Update selected day if weekPlan changes (e.g. on new generation)
+  useEffect(() => {
+    setSelectedDay(getInitialDay());
+  }, [weekPlan]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -144,32 +158,71 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
   const handleExport = () => {
     if (!weekPlan || weekPlan.length === 0) return;
 
-    let content = "Weekly Meal Plan\n\n";
-    weekPlan.forEach(day => {
-      content += `=== ${day.day} (${day.date}) ===\n`;
-      content += `Total Calories: ${day.totalCalories} | Protein: ${day.totalProtein}g | Carbs: ${day.totalCarbs}g | Fat: ${day.totalFat}g\n\n`;
+    const doc = new jsPDF();
 
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(5, 150, 105); // Emerald-600
+    doc.text("NutriPlan Weekly Meal Plan", 20, 20);
+
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 20, 30);
+
+    let yPos = 45;
+
+    weekPlan.forEach(day => {
+      // Check for page break availability
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      // Day Header
+      doc.setFontSize(16);
+      doc.setTextColor(0);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${day.day} (${day.date})`, 20, yPos);
+      yPos += 8;
+
+      // Daily Macros Summary
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Total: ${day.totalCalories} cal | Protein: ${day.totalProtein}g | Carbs: ${day.totalCarbs}g | Fat: ${day.totalFat}g`, 20, yPos);
+      yPos += 12;
+
+      // Meals
       ['breakfast', 'lunch', 'snack', 'dinner'].forEach(type => {
         const meal = day[type];
         if (meal) {
-          content += `${type.charAt(0).toUpperCase() + type.slice(1)}: ${meal.name}\n`;
-          content += `  - Calories: ${meal.calories}\n`;
-          content += `  - Macros: P: ${meal.protein}g, C: ${meal.carbs}g, F: ${meal.fat}g\n`;
-          content += `  - Ingredients: ${meal.ingredients.join(', ')}\n\n`;
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          doc.setFontSize(11);
+          doc.setTextColor(5, 150, 105); // Emerald
+          doc.setFont("helvetica", "bold");
+          doc.text(type.charAt(0).toUpperCase() + type.slice(1), 25, yPos);
+
+          doc.setTextColor(0);
+          doc.setFont("helvetica", "normal");
+          const mealName = `: ${meal.name}`;
+          doc.text(mealName, 50, yPos);
+          yPos += 6;
+
+          doc.setFontSize(9);
+          doc.setTextColor(80);
+          doc.text(`${meal.calories} cal | P:${meal.protein}g C:${meal.carbs}g F:${meal.fat}g`, 50, yPos);
+          yPos += 8;
         }
       });
-      content += "\n-----------------------------------\n\n";
+
+      yPos += 10; // Extra spacing between days
     });
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `meal-plan-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    doc.save(`meal-plan-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handleShare = () => {

@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Utensils, Moon, Sun, User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight } from 'lucide-react';
+import { User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight, Utensils } from 'lucide-react';
 import { createAndSaveMealPlan } from '../services/mealPlanGenerator';
 import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
-import { getTodayCompliance, getWeeklyCompliance, calculateStreak, calculateCombinedStreak, getComplianceForDate } from '../services/complianceService';
+import { getWeeklyCompliance, calculateCombinedStreak, getComplianceForDate, getWeeklyMealBreakdown } from '../services/complianceService';
 import { api } from '../services/api';
 import HydrationTracker from '../components/dashboard/HydrationTracker';
 import NextMealCard from '../components/dashboard/NextMealCard';
 
 const DashboardPage = ({ setCurrentPage }) => {
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark } = useTheme();
   const [userProfile, setUserProfile] = useState(null);
   const [mealPlan, setMealPlan] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -20,6 +20,7 @@ const DashboardPage = ({ setCurrentPage }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [streak, setStreak] = useState(0);
   const [weeklyCompliance, setWeeklyCompliance] = useState(null);
+  const [mealBreakdown, setMealBreakdown] = useState({ breakfast: 0, lunch: 0, snack: 0, dinner: 0 });
   const [consumedStats, setConsumedStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [complianceUpdateTrigger, setComplianceUpdateTrigger] = useState(0);
 
@@ -103,6 +104,7 @@ const DashboardPage = ({ setCurrentPage }) => {
         const weekly = getWeeklyCompliance();
         setStreak(currentStreak);
         setWeeklyCompliance(weekly);
+        setMealBreakdown(getWeeklyMealBreakdown());
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         // Try to load from localStorage as fallback
@@ -180,13 +182,19 @@ const DashboardPage = ({ setCurrentPage }) => {
 
   if (isLoadingData) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'
-        }`}>
-        <div className="text-center">
-          <p className={`text-xl mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Loading your dashboard...
-          </p>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--color-canvas)',
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)"
+            strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin-slow 0.8s linear infinite' }}>
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+          <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Loading your dashboard…</span>
         </div>
       </div>
     );
@@ -195,22 +203,47 @@ const DashboardPage = ({ setCurrentPage }) => {
   // If no profile exists or profile is empty, prompt user to complete onboarding
   if (!userProfile || Object.keys(userProfile).length === 0) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className="text-center max-w-md p-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-white" />
+      <div style={{
+        minHeight: '50vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '4rem 2rem',
+      }}>
+        <div style={{ maxWidth: '28rem', textAlign: 'center' }}>
+          <div style={{
+            width: '4rem',
+            height: '4rem',
+            background: 'var(--color-brand)',
+            borderRadius: 'var(--radius-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1.5rem',
+            boxShadow: 'var(--shadow-brand)',
+          }}>
+            <User style={{ width: '1.75rem', height: '1.75rem', color: '#fff' }} />
           </div>
-          <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Complete Your Profile
-          </h2>
-          <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Let's set up your profile to get personalized meal plans and nutrition tracking.
-          </p>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: 'var(--text-2xl)',
+            letterSpacing: '-0.03em',
+            color: 'var(--color-text-primary)',
+            margin: '0 0 0.75rem',
+          }}>Complete your profile</h2>
+          <p style={{
+            fontFamily: 'var(--font-body)',
+            color: 'var(--color-text-secondary)',
+            lineHeight: 1.65,
+            marginBottom: '2rem',
+          }}>Set up your health profile to receive personalised meal plans and nutrition tracking.</p>
           <button
             onClick={() => setCurrentPage('onboarding')}
-            className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+            className="btn btn--primary"
+            style={{ padding: '0.75rem 2rem', fontSize: 'var(--text-base)' }}
           >
-            Get Started
+            Get started
           </button>
         </div>
       </div>
@@ -227,181 +260,126 @@ const DashboardPage = ({ setCurrentPage }) => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'
-      }`}>
-      {/* Navigation */}
-      <nav className={`sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-gray-200'
-        }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Utensils className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                NutriPlan
-              </span>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={toggleTheme}
-                className={`p-2.5 rounded-xl transition-all duration-300 ${isDark
-                  ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-              >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-              <button
-                className={`p-2.5 rounded-xl transition-all duration-300 ${isDark
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                onClick={() => setCurrentPage('profile')}
-              >
-                <User className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div style={{ minHeight: '100vh', background: 'var(--color-canvas)' }}>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container-page" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className={`text-3xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Welcome back! 👋
-          </h1>
-          <div className="flex items-center space-x-2">
-            <Calendar className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-            <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-              {formatDate(currentDate)}
-            </p>
+        <div style={{ marginBottom: '2.5rem' }}>
+          <h1 style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: 'var(--text-3xl)',
+            letterSpacing: '-0.03em',
+            color: 'var(--color-text-primary)',
+            margin: '0 0 0.4rem',
+          }}>Good day 👋</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Calendar style={{ width: '1rem', height: '1rem', color: 'var(--color-text-muted)' }} />
+            <p style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-sm)',
+              color: 'var(--color-text-secondary)',
+              margin: 0,
+            }}>{formatDate(currentDate)}</p>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Daily Calories */}
-          <div className={`p-6 rounded-2xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-            }`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${isDark ? 'bg-orange-900/30' : 'bg-orange-100'
-                }`}>
-                <Flame className="w-6 h-6 text-orange-600" />
+        {/* Quick Stats — top row: 4 fixed stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+          {/* Calories */}
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Calories today</span>
+                <span className="tabular" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-3xl)', letterSpacing: '-0.04em', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+                  {consumedStats.calories}
+                </span>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>of {userProfile.nutritionTargets.targetCalories} target</span>
               </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Today
-              </span>
+              <div style={{ padding: '0.625rem', background: 'oklch(96% 0.06 52)', borderRadius: '0.625rem' }}>
+                <Flame style={{ width: '1.25rem', height: '1.25rem', color: 'oklch(58% 0.15 52)' }} />
+              </div>
             </div>
-            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {consumedStats.calories} / {userProfile.nutritionTargets.targetCalories}
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-              Calories Consumed
-            </p>
-            <div className={`mt-3 h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-              <div
-                className="h-2 rounded-full bg-orange-600"
-                style={{
-                  width: `${Math.min((consumedStats.calories / userProfile.nutritionTargets.targetCalories) * 100, 100)}%`
-                }}
-              ></div>
+            <div className="progress-track" style={{ height: '6px' }}>
+              <div className="progress-fill" style={{
+                width: `${Math.min((consumedStats.calories / userProfile.nutritionTargets.targetCalories) * 100, 100)}%`,
+                background: 'oklch(68% 0.15 52)',
+              }} />
             </div>
           </div>
 
           {/* Protein */}
-          <div className={`p-6 rounded-2xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-            }`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${isDark ? 'bg-blue-900/30' : 'bg-blue-100'
-                }`}>
-                <Target className="w-6 h-6 text-blue-600" />
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Protein</span>
+                <span className="tabular" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-3xl)', letterSpacing: '-0.04em', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+                  {consumedStats.protein}g
+                </span>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>of {userProfile.nutritionTargets.macros.protein}g target</span>
               </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Protein
-              </span>
+              <div style={{ padding: '0.625rem', background: 'var(--color-brand-muted)', borderRadius: '0.625rem' }}>
+                <Target style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-brand)' }} />
+              </div>
             </div>
-            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {consumedStats.protein} / {userProfile.nutritionTargets.macros.protein}g
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-              Protein Consumed
-            </p>
-            <div className={`mt-3 h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-              <div
-                className="h-2 rounded-full bg-blue-600"
-                style={{
-                  width: `${Math.min((consumedStats.protein / userProfile.nutritionTargets.macros.protein) * 100, 100)}%`
-                }}
-              ></div>
+            <div className="progress-track" style={{ height: '6px' }}>
+              <div className="progress-fill" style={{
+                width: `${Math.min((consumedStats.protein / userProfile.nutritionTargets.macros.protein) * 100, 100)}%`,
+                background: 'var(--color-brand)',
+              }} />
             </div>
           </div>
 
-          {/* Current Weight */}
-          <div className={`p-6 rounded-2xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-            }`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${isDark ? 'bg-purple-900/30' : 'bg-purple-100'
-                }`}>
-                <TrendingUp className="w-6 h-6 text-purple-600" />
+          {/* Weight */}
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Current weight</span>
+                <span className="tabular" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-3xl)', letterSpacing: '-0.04em', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+                  {userProfile.weight} <span style={{ fontSize: 'var(--text-xl)' }}>kg</span>
+                </span>
+                {userProfile.goal !== 'maintain' && (
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-brand)' }}>Target: {userProfile.targetWeight} kg</span>
+                )}
               </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Weight
-              </span>
+              <div style={{ padding: '0.625rem', background: 'oklch(94% 0.04 280)', borderRadius: '0.625rem' }}>
+                <TrendingUp style={{ width: '1.25rem', height: '1.25rem', color: 'oklch(50% 0.15 280)' }} />
+              </div>
             </div>
-            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {userProfile.weight} kg
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-              Current
-            </p>
-            {userProfile.goal !== 'maintain' && (
-              <p className={`text-xs mt-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
-                Target: {userProfile.targetWeight} kg
-              </p>
-            )}
           </div>
 
           {/* Streak */}
-          <div className={`p-6 rounded-2xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-            }`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${isDark ? 'bg-emerald-900/30' : 'bg-emerald-100'
-                }`}>
-                <Award className="w-6 h-6 text-emerald-600" />
-              </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Streak
-              </span>
-            </div>
-            <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {streak} {streak === 1 ? 'Day' : 'Days'}
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-              {weeklyCompliance && (
-                <span>
-                  {weeklyCompliance.overallCompliance}% compliance this week
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Streak</span>
+                <span className="tabular" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-3xl)', letterSpacing: '-0.04em', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+                  {streak} <span style={{ fontSize: 'var(--text-xl)' }}>{streak === 1 ? 'day' : 'days'}</span>
                 </span>
-              )}
-            </p>
+                {weeklyCompliance && (
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-brand)', fontWeight: 600 }}>
+                    {weeklyCompliance.overallCompliance}% compliance this week
+                  </span>
+                )}
+              </div>
+              <div style={{ padding: '0.625rem', background: 'var(--color-brand-muted)', borderRadius: '0.625rem' }}>
+                <Award style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-brand)' }} />
+              </div>
+            </div>
           </div>
 
-          {/* Hydration Tracker */}
-          <div>
-            <HydrationTracker />
-          </div>
-
-          {/* Next Meal Card */}
-          <div>
-            <NextMealCard
-              todaysMeals={todaysMeals}
-              onViewRecipe={handleViewRecipe}
-            />
-          </div>
         </div>
+
+        {/* Second row: Hydration + Next Meal — full-width 2-col grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          <HydrationTracker />
+          <NextMealCard
+            todaysMeals={todaysMeals}
+            onViewRecipe={handleViewRecipe}
+          />
+        </div>
+
 
         {/* Today's Meals */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -526,88 +504,109 @@ const DashboardPage = ({ setCurrentPage }) => {
             </div>
           </div>
 
-          {/* Macro Breakdown & Quick Actions */}
-          <div>
-            {/* Macro Breakdown */}
-            <div className={`p-6 rounded-2xl shadow-lg mb-6 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-              }`}>
-              <h2 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          {/* ── SIDEBAR COLUMN — aligns to top, no blank stretch */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignSelf: 'start' }}>
+
+            {/* Card 1: Macro Breakdown */}
+            <div className="card" style={{ padding: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-lg)', letterSpacing: '-0.02em', color: 'var(--color-text-primary)', margin: '0 0 1rem 0' }}>
                 Macro Breakdown
               </h2>
 
-              <div className="space-y-4">
-                {/* Protein */}
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Protein
-                    </span>
-                    <span className={`text-sm font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                      {consumedStats.protein} / {userProfile.nutritionTargets.macros.protein}g
-                    </span>
+              {/* Calorie donut */}
+              {(() => {
+                const calPct = Math.min((consumedStats.calories / (userProfile.nutritionTargets.targetCalories || 1)) * 100, 100);
+                const r = 38; const circ = 2 * Math.PI * r;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', padding: '0.75rem', background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
+                      <svg viewBox="0 0 80 80" width="80" height="80">
+                        <circle cx="40" cy="40" r={r} fill="none" stroke={isDark ? 'oklch(28% 0.03 152)' : 'oklch(88% 0.018 152)'} strokeWidth="7" />
+                        <circle cx="40" cy="40" r={r} fill="none" stroke="oklch(68% 0.15 52)" strokeWidth="7"
+                          strokeLinecap="round" strokeDasharray={circ}
+                          strokeDashoffset={circ * (1 - calPct / 100)}
+                          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.16,1,0.3,1)' }}
+                          transform="rotate(-90 40 40)" />
+                      </svg>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>{Math.round(calPct)}%</span>
+                        <span style={{ fontFamily: 'var(--font-ui)', fontSize: '0.55rem', color: 'var(--color-text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>goal</span>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)', marginBottom: '0.2rem' }}>Calories today</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-xl)', letterSpacing: '-0.04em', color: 'var(--color-text-primary)', lineHeight: 1, marginBottom: '0.2rem' }}>{consumedStats.calories}</div>
+                      <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>of {userProfile.nutritionTargets.targetCalories} kcal</div>
+                      <div style={{ marginTop: '0.5rem', height: '4px', background: isDark ? 'oklch(28% 0.03 152)' : 'oklch(88% 0.018 152)', borderRadius: '999px', overflow: 'hidden' }}>
+                        <div style={{ width: `${calPct}%`, height: '100%', background: 'oklch(68% 0.15 52)', borderRadius: '999px', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)' }} />
+                      </div>
+                    </div>
                   </div>
-                  <div className={`h-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                    <div
-                      className="h-3 rounded-full bg-blue-600 transition-all duration-500"
-                      style={{
-                        width: `${Math.min((consumedStats.protein / userProfile.nutritionTargets.macros.protein) * 100, 100)}%`
-                      }}
-                    ></div>
-                  </div>
-                </div>
+                );
+              })()}
 
-                {/* Carbs */}
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Carbs
-                    </span>
-                    <span className={`text-sm font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                      {consumedStats.carbs} / {userProfile.nutritionTargets.macros.carbs}g
-                    </span>
+              {/* Macro bars */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {[
+                  { label: 'Protein', val: consumedStats.protein, max: userProfile.nutritionTargets.macros.protein, color: 'var(--color-brand)' },
+                  { label: 'Carbs',   val: consumedStats.carbs,   max: userProfile.nutritionTargets.macros.carbs,   color: 'oklch(68% 0.15 52)' },
+                  { label: 'Fat',     val: consumedStats.fat,     max: userProfile.nutritionTargets.macros.fat,     color: 'oklch(52% 0.13 250)' },
+                ].map(({ label, val, max, color }) => (
+                  <div key={label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                      <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-secondary)' }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 700, color }}>{val} / {max}g</span>
+                    </div>
+                    <div className="progress-track" style={{ height: '6px' }}>
+                      <div className="progress-fill" style={{ width: `${Math.min((val / (max || 1)) * 100, 100)}%`, background: color }} />
+                    </div>
                   </div>
-                  <div className={`h-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                    <div
-                      className="h-3 rounded-full bg-green-600 transition-all duration-500"
-                      style={{
-                        width: `${Math.min((consumedStats.carbs / userProfile.nutritionTargets.macros.carbs) * 100, 100)}%`
-                      }}
-                    ></div>
-                  </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                {/* Fat */}
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Fat
-                    </span>
-                    <span className={`text-sm font-bold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                      {consumedStats.fat} / {userProfile.nutritionTargets.macros.fat}g
-                    </span>
+            {/* Card 2: This week */}
+            <div className="card" style={{ padding: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-lg)', letterSpacing: '-0.02em', color: 'var(--color-text-primary)', margin: '0 0 1rem 0' }}>
+                This week
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {[
+                  { label: 'Breakfast', pct: mealBreakdown.breakfast },
+                  { label: 'Lunch',     pct: mealBreakdown.lunch },
+                  { label: 'Snack',     pct: mealBreakdown.snack },
+                  { label: 'Dinner',    pct: mealBreakdown.dinner },
+                ].map(({ label, pct }) => (
+                  <div key={label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-secondary)' }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-brand)' }}>{pct}%</span>
+                    </div>
+                    <div className="progress-track" style={{ height: '6px' }}>
+                      <div className="progress-fill" style={{ width: `${pct}%`, background: 'var(--color-brand)' }} />
+                    </div>
                   </div>
-                  <div className={`h-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                    <div
-                      className="h-3 rounded-full bg-orange-600 transition-all duration-500"
-                      style={{
-                        width: `${Math.min((consumedStats.fat / userProfile.nutritionTargets.macros.fat) * 100, 100)}%`
-                      }}
-                    ></div>
-                  </div>
+                ))}
+                <div style={{ marginTop: '0.5rem', padding: '0.625rem 0.75rem', background: 'var(--color-brand-muted)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-brand)' }}>Overall</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-lg)', color: 'var(--color-brand)', letterSpacing: '-0.03em' }}>{weeklyCompliance?.overallCompliance ?? 0}%</span>
                 </div>
               </div>
             </div>
 
+          </div>{/* end sidebar column */}
+
           </div>
+
         </div>
-      </div>
+
       <RecipeDetailModal
         recipe={selectedRecipe}
         mealType={selectedMealType}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />
-    </div >
+      </div>
   );
 };
 

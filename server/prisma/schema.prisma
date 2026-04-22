@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
+}
 }
 
 model User {
@@ -23,6 +24,7 @@ model User {
   compliance Compliance[]
   weightLogs WeightLog[]
   hydrationLogs HydrationLog[]
+  favoriteRecipes FavoriteRecipe[]
 }
 
 model MealPlan {
@@ -62,4 +64,15 @@ model HydrationLog {
   date      String   // YYYY-MM-DD for easy daily aggregation
   amount    Int      // in ml
   createdAt DateTime @default(now())
+}
+
+model FavoriteRecipe {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId  String
+  recipe    String   // JSON string of the full recipe object
+  createdAt DateTime @default(now())
+
+  @@unique([userId, recipeId])
 }

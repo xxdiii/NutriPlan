@@ -307,6 +307,74 @@ app.post('/api/hydration', authenticateToken, async (req, res) => {
     }
 });
 
+// 7. Favorites (Protected)
+app.get('/api/favorites', authenticateToken, async (req, res) => {
+    try {
+        console.log('GET /api/favorites called for user:', req.user.id);
+        const favorites = await prisma.favoriteRecipe.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: 'desc' }
+        });
+        // Parse the JSON string 'recipe' field back to object
+        const parsedFavorites = favorites.map(f => ({
+            ...f,
+            recipe: JSON.parse(f.recipe)
+        }));
+        res.json(parsedFavorites);
+    } catch (error) {
+        console.error('GET /api/favorites error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/favorites', authenticateToken, async (req, res) => {
+    try {
+        console.log('POST /api/favorites called. Body:', req.body);
+        const recipe = req.body;
+        // recipeId should be string, ensure it exists
+        if (!recipe || !recipe.id) {
+            console.error('Invalid recipe data in POST /favorites');
+            return res.status(400).json({ error: 'Invalid recipe data' });
+        }
+
+        const newFavorite = await prisma.favoriteRecipe.create({
+            data: {
+                userId: req.user.id,
+                recipeId: String(recipe.id),
+                recipe: JSON.stringify(recipe)
+            }
+        });
+
+        console.log('Favorite created:', newFavorite.id);
+        res.json({
+            ...newFavorite,
+            recipe: JSON.parse(newFavorite.recipe)
+        });
+    } catch (error) {
+        console.error('POST /api/favorites error:', error);
+        // Handle unique constraint violation
+        if (error.code === 'P2002') {
+            return res.status(400).json({ message: 'Recipe already favorited' });
+        }
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/favorites/:recipeId', authenticateToken, async (req, res) => {
+    try {
+        const { recipeId } = req.params;
+        await prisma.favoriteRecipe.deleteMany({
+            where: {
+                userId: req.user.id,
+                recipeId: recipeId
+            }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

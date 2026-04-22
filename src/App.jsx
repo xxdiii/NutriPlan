@@ -13,6 +13,9 @@ import RecipePage from './pages/RecipePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import NavigationLayout from './components/layout/NavigationLayout';
+import AIDietAssistantPage from './pages/AIDietAssistantPage';
+import NutritionInsightsPage from './pages/NutritionInsightsPage';
+import PlanLibraryPage from './pages/PlanLibraryPage';
 
 // Inner component to handle routing with auth access
 const AppRoutes = () => {
@@ -46,7 +49,7 @@ const AppRoutes = () => {
 
   // Redirect logged-out users trying to access protected routes
   useEffect(() => {
-    const protectedRoutes = ['dashboard', 'onboarding', 'mealplan', 'shopping', 'progress', 'settings', 'profile', 'recipes'];
+    const protectedRoutes = ['dashboard', 'onboarding', 'mealplan', 'shopping', 'progress', 'settings', 'profile', 'recipes', 'ai-assistant', 'insights', 'plan-library'];
 
     if (!loading && !user && protectedRoutes.includes(currentPage)) {
       setCurrentPage('landing');
@@ -64,8 +67,39 @@ const AppRoutes = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--color-canvas)',
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1rem',
+        }}>
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--color-brand)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            style={{ animation: 'spin-slow 0.8s linear infinite' }}
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+          <span style={{
+            fontFamily: 'var(--font-ui)',
+            fontSize: 'var(--text-sm)',
+            color: 'var(--color-text-muted)',
+            letterSpacing: '0.04em',
+            fontWeight: 500,
+          }}>Loading…</span>
+        </div>
       </div>
     );
   }
@@ -108,6 +142,12 @@ const AppRoutes = () => {
         return <LayoutWrapper><ProfilePage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       case 'recipes':
         return <LayoutWrapper><RecipePage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
+      case 'ai-assistant':
+        return <LayoutWrapper><AIDietAssistantPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
+      case 'insights':
+        return <LayoutWrapper><NutritionInsightsPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
+      case 'plan-library':
+        return <LayoutWrapper><PlanLibraryPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
       default:
         return <LayoutWrapper><DashboardPage setCurrentPage={setCurrentPage} /></LayoutWrapper>;
     }
