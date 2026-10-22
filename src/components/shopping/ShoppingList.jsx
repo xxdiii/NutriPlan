@@ -178,10 +178,6 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {shoppingList.totalItems} items total
             </p>
-            <div className={`h-4 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
-            <p className={`text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-              Est. Cost: ₹{costEstimate?.total || 0}
-            </p>
           </div>
         </div>
 

@@ -2,9 +2,8 @@ const API_URL = 'http://localhost:3000/api';
 
 const handleResponse = async (response) => {
     if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
             localStorage.removeItem('token');
-            // window.location.reload(); // excessive, maybe just let app handle it
         }
         const error = await response.json().catch(() => ({ message: 'Something went wrong' }));
         throw new Error(error.message || error.error || 'API Error');
@@ -12,23 +11,43 @@ const handleResponse = async (response) => {
     return response.json();
 };
 
+/**
+ * Like handleResponse but also returns the parsed body on 4xx so callers
+ * can inspect `requiresVerification` flags without catching errors.
+ */
+const handleAuthResponse = async (response) => {
+    const data = await response.json().catch(() => ({ message: 'Something went wrong' }));
+    if (!response.ok && response.status !== 400 && response.status !== 403) {
+        throw new Error(data.message || data.error || 'API Error');
+    }
+    return { ...data, _status: response.status };
+};
+
 const getHeaders = () => {
     const token = localStorage.getItem('token');
     return {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     };
 };
 
 export const api = {
     // Auth
-    login: async (email, password) => {
+    getCaptcha: async () => {
+        const res = await fetch(`${API_URL}/auth/captcha`);
+        return handleResponse(res);
+    },
+
+    login: async (email, password, captchaText, captchaToken) => {
         const res = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, captchaText, captchaToken })
         });
-        return handleResponse(res);
+        return handleAuthResponse(res);
     },
 
     register: async (name, email, password) => {
@@ -37,7 +56,43 @@ export const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
-        return handleResponse(res);
+        return handleAuthResponse(res);
+    },
+
+    verifyEmail: async (email, otp) => {
+        const res = await fetch(`${API_URL}/auth/verify-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+        });
+        return handleAuthResponse(res);
+    },
+
+    resendOtp: async (email) => {
+        const res = await fetch(`${API_URL}/auth/resend-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        return handleAuthResponse(res);
+    },
+
+    forgotPassword: async (email) => {
+        const res = await fetch(`${API_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        return handleAuthResponse(res);
+    },
+
+    resetPassword: async (email, otp, newPassword) => {
+        const res = await fetch(`${API_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp, newPassword })
+        });
+        return handleAuthResponse(res);
     },
 
     // User Profile

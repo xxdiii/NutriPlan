@@ -9,7 +9,6 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
-}
 
 model User {
   id        Int      @id @default(autoincrement())
@@ -17,6 +16,8 @@ model User {
   password  String
   name      String?
   profile   String   // JSON string of the user profile
+  isVerified Boolean @default(false)
+  verificationToken String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   

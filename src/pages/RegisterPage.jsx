@@ -12,14 +12,71 @@ const RegisterPage = ({ setCurrentPage }) => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const getPasswordStrength = (pass) => {
+        if (!pass) return 0;
+        let score = 0;
+        if (pass.length > 5) score += 1;
+        if (pass.length >= 8) score += 1;
+        if (/[A-Z]/.test(pass)) score += 1;
+        if (/[0-9]/.test(pass)) score += 1;
+        if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+        return Math.min(5, score);
+    };
+
+    const getStrengthColor = (score) => {
+        switch (score) {
+            case 1: return 'bg-red-500';
+            case 2: return 'bg-orange-500';
+            case 3: return 'bg-yellow-500';
+            case 4: return 'bg-green-500';
+            case 5: return 'bg-emerald-500';
+            default: return 'bg-gray-200';
+        }
+    };
+
+    const getStrengthTextColor = (score) => {
+        switch (score) {
+            case 1: return 'text-red-500';
+            case 2: return 'text-orange-500';
+            case 3: return 'text-yellow-500';
+            case 4: return 'text-green-500';
+            case 5: return 'text-emerald-500';
+            default: return 'text-gray-500';
+        }
+    };
+
+    const getStrengthLabel = (score) => {
+        switch (score) {
+            case 1: return 'Very Weak';
+            case 2: return 'Weak';
+            case 3: return 'Fair';
+            case 4: return 'Good';
+            case 5: return 'Strong';
+            default: return '';
+        }
+    };
+
+    const strengthScore = getPasswordStrength(password);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+
         setLoading(true);
         try {
             const result = await register(name, email, password);
-            if (result.success) {
-                setCurrentPage('onboarding'); // Redirect to onboarding after register
+            if (result.requiresVerification) {
+                // Save email so the verification page knows which account to verify
+                sessionStorage.setItem('pendingVerificationEmail', result.email);
+                setCurrentPage('verify-email');
+            } else if (result.success) {
+                setCurrentPage('onboarding');
             } else {
                 setError(result.error || 'Registration failed. Email might be taken.');
             }
@@ -94,6 +151,17 @@ const RegisterPage = ({ setCurrentPage }) => {
                                 required
                             />
                         </div>
+                        {password && (
+                            <div className="mt-2">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Password Strength</span>
+                                    <span className={`text-xs font-medium ${getStrengthTextColor(strengthScore)}`}>{getStrengthLabel(strengthScore)}</span>
+                                </div>
+                                <div className={`w-full h-1.5 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden`}>
+                                    <div className={`h-full rounded-full transition-all duration-300 ${getStrengthColor(strengthScore)}`} style={{ width: `${(strengthScore / 5) * 100}%` }}></div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <button

@@ -27,11 +27,14 @@ const HydrationTracker = () => {
             const todayStr = getLocalDateStr();
             const data = await api.getHydration(todayStr);
             if (data && typeof data.amount === 'number') {
-                setHydration(data.amount);
-                // Keep localStorage in sync as fallback
-                localStorage.setItem(`hydration_${todayStr}`, String(data.amount));
+                const cached = localStorage.getItem(`hydration_${todayStr}`);
+                const cachedAmt = cached ? Number(cached) : 0;
+                
+                // Use the max of server and local storage to prevent data loss
+                const maxAmt = Math.max(data.amount, cachedAmt);
+                setHydration(maxAmt);
+                localStorage.setItem(`hydration_${todayStr}`, String(maxAmt));
             } else {
-                // Fallback to localStorage if API returns nothing
                 const cached = localStorage.getItem(`hydration_${todayStr}`);
                 if (cached) setHydration(Number(cached));
             }
@@ -53,6 +56,12 @@ const HydrationTracker = () => {
 
             const todayStr = getLocalDateStr();
             localStorage.setItem(`hydration_${todayStr}`, String(newAmount)); // Always persist locally
+            
+            // Dispatch event for other components to react instantly
+            window.dispatchEvent(new CustomEvent('hydration-update', {
+                detail: { date: todayStr, amount: newAmount }
+            }));
+
             await api.updateHydration(todayStr, newAmount);
         } catch (error) {
             console.error('Error updating hydration:', error);

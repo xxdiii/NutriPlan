@@ -12,6 +12,8 @@ import {
   Sparkles,
   LineChart,
   BookOpen,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -32,7 +34,7 @@ const NAV_ITEMS = [
    mobile. Uses design-system tokens throughout.
    ───────────────────────────────────────────────── */
 const NavigationLayout = ({ children, currentPage, setCurrentPage }) => {
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
 
   const handleNav = (pageId) => {
     setCurrentPage(pageId);
@@ -198,8 +200,60 @@ const NavigationLayout = ({ children, currentPage, setCurrentPage }) => {
           })}
         </nav>
 
-        {/* Profile button */}
-        <div style={{ paddingTop: '0.75rem', borderTop: `1px solid ${sidebarBorder}` }}>
+        {/* Theme & Profile section */}
+        <div style={{ paddingTop: '0.75rem', borderTop: `1px solid ${sidebarBorder}`, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <button
+            onClick={toggleTheme}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.875rem',
+              padding: '0.6rem 0.625rem',
+              borderRadius: '0.625rem',
+              border: 'none',
+              background: 'transparent',
+              color: isDark ? 'oklch(52% 0.018 152)' : 'oklch(52% 0.02 152)',
+              width: '100%',
+              cursor: 'pointer',
+              transition: 'background 180ms, color 180ms',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? 'oklch(21% 0.026 152)' : 'oklch(93% 0.016 152)';
+                e.currentTarget.style.color = isDark ? 'oklch(72% 0.02 152)' : 'oklch(42% 0.025 152)';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = isDark ? 'oklch(52% 0.018 152)' : 'oklch(52% 0.02 152)';
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2rem',
+                height: '2rem',
+                flexShrink: 0,
+              }}
+            >
+              {isDark ? <Sun size={20} strokeWidth={2} /> : <Moon size={20} strokeWidth={2} />}
+            </div>
+            <span
+              className="sidebar-label"
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                opacity: 0,
+                transition: 'opacity 200ms 60ms',
+              }}
+            >
+              {isDark ? 'Light Mode' : 'Dark Mode'}
+            </span>
+          </button>
+
           <button
             id="nav-profile"
             onClick={() => handleNav('profile')}

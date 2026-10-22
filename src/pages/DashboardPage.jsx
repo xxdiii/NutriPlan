@@ -3,10 +3,11 @@ import { useTheme } from '../context/ThemeContext';
 import { User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight, Utensils } from 'lucide-react';
 import { createAndSaveMealPlan } from '../services/mealPlanGenerator';
 import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
-import { getWeeklyCompliance, calculateCombinedStreak, getComplianceForDate, getWeeklyMealBreakdown } from '../services/complianceService';
+import { getComplianceForDate, getWeeklyMealBreakdown } from '../services/complianceService';
 import { api } from '../services/api';
 import HydrationTracker from '../components/dashboard/HydrationTracker';
 import NextMealCard from '../components/dashboard/NextMealCard';
+import StreakWidget from '../components/dashboard/StreakWidget';
 
 const DashboardPage = ({ setCurrentPage }) => {
   const { isDark } = useTheme();
@@ -18,7 +19,6 @@ const DashboardPage = ({ setCurrentPage }) => {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [streak, setStreak] = useState(0);
   const [weeklyCompliance, setWeeklyCompliance] = useState(null);
   const [mealBreakdown, setMealBreakdown] = useState({ breakfast: 0, lunch: 0, snack: 0, dinner: 0 });
   const [consumedStats, setConsumedStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
@@ -100,9 +100,7 @@ const DashboardPage = ({ setCurrentPage }) => {
         // So 'getWeeklyCompliance' will fail if data is only in backend.
         // TODO: Fully migrate compliance service.
 
-        const currentStreak = await calculateCombinedStreak(api);
-        const weekly = getWeeklyCompliance();
-        setStreak(currentStreak);
+        const weekly = getWeeklyCompliance ? null : null; // streak widget handles its own state
         setWeeklyCompliance(weekly);
         setMealBreakdown(getWeeklyMealBreakdown());
       } catch (error) {
@@ -349,24 +347,9 @@ const DashboardPage = ({ setCurrentPage }) => {
             </div>
           </div>
 
-          {/* Streak */}
-          <div className="card" style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Streak</span>
-                <span className="tabular" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-3xl)', letterSpacing: '-0.04em', color: 'var(--color-text-primary)', lineHeight: 1 }}>
-                  {streak} <span style={{ fontSize: 'var(--text-xl)' }}>{streak === 1 ? 'day' : 'days'}</span>
-                </span>
-                {weeklyCompliance && (
-                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-brand)', fontWeight: 600 }}>
-                    {weeklyCompliance.overallCompliance}% compliance this week
-                  </span>
-                )}
-              </div>
-              <div style={{ padding: '0.625rem', background: 'var(--color-brand-muted)', borderRadius: '0.625rem' }}>
-                <Award style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-brand)' }} />
-              </div>
-            </div>
+          {/* Streak – now powered by StreakWidget */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <StreakWidget compact />
           </div>
 
         </div>
@@ -589,7 +572,9 @@ const DashboardPage = ({ setCurrentPage }) => {
                 ))}
                 <div style={{ marginTop: '0.5rem', padding: '0.625rem 0.75rem', background: 'var(--color-brand-muted)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-brand)' }}>Overall</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-lg)', color: 'var(--color-brand)', letterSpacing: '-0.03em' }}>{weeklyCompliance?.overallCompliance ?? 0}%</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-lg)', color: 'var(--color-brand)', letterSpacing: '-0.03em' }}>
+                    {Math.round((mealBreakdown.breakfast + mealBreakdown.lunch + mealBreakdown.snack + mealBreakdown.dinner) / 4)}%
+                  </span>
                 </div>
               </div>
             </div>

@@ -12,6 +12,8 @@ import ProfilePage from './pages/ProfilePage';
 import RecipePage from './pages/RecipePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import NavigationLayout from './components/layout/NavigationLayout';
 import AIDietAssistantPage from './pages/AIDietAssistantPage';
 import NutritionInsightsPage from './pages/NutritionInsightsPage';
@@ -109,6 +111,8 @@ const AppRoutes = () => {
     if (currentPage === 'landing') return <LandingPage setCurrentPage={setCurrentPage} />;
     if (currentPage === 'login') return user ? <DashboardPage setCurrentPage={setCurrentPage} /> : <LoginPage setCurrentPage={setCurrentPage} />;
     if (currentPage === 'register') return user ? <DashboardPage setCurrentPage={setCurrentPage} /> : <RegisterPage setCurrentPage={setCurrentPage} />;
+    if (currentPage === 'verify-email') return <EmailVerificationPage setCurrentPage={setCurrentPage} />;
+    if (currentPage === 'forgot-password') return user ? <DashboardPage setCurrentPage={setCurrentPage} /> : <ForgotPasswordPage setCurrentPage={setCurrentPage} />;
 
     // Protected Routes
     if (!user) {

@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, Droplets, Flame, Award, CheckCircle2, BarChart3 } from 'lucide-react';
 import { api } from '../services/api';
 import { getComplianceStats, getWeeklyMealBreakdown } from '../services/complianceService';
+import ComplianceHeatmap from '../components/compliance/ComplianceHeatmap';
 
 // ── SVG Donut Chart ────────────────────────────────────────────────────────
 const DonutChart = ({ value, max, color, label, unit = 'g', size = 100 }) => {
@@ -106,12 +107,22 @@ const NutritionInsightsPage = () => {
       const hydArr = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date(today); d.setDate(today.getDate() - i);
-        const ds = d.toISOString().split('T')[0];
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const ds = `${yyyy}-${mm}-${dd}`;
+        
         try {
           const h = await api.getHydration(ds);
-          hydArr.push({ date: d.toLocaleDateString('en-US', { weekday: 'short' }), amount: h?.amount || 0 });
+          let amt = h?.amount || 0;
+          const cached = localStorage.getItem(`hydration_${ds}`);
+          const cachedAmt = cached ? Number(cached) : 0;
+          amt = Math.max(amt, cachedAmt);
+          
+          hydArr.push({ date: d.toLocaleDateString('en-US', { weekday: 'short' }), amount: amt });
         } catch (_) {
-          hydArr.push({ date: d.toLocaleDateString('en-US', { weekday: 'short' }), amount: 0 });
+          const cached = localStorage.getItem(`hydration_${ds}`);
+          hydArr.push({ date: d.toLocaleDateString('en-US', { weekday: 'short' }), amount: cached ? Number(cached) : 0 });
         }
       }
       setHydrationData(hydArr);
@@ -133,7 +144,10 @@ const NutritionInsightsPage = () => {
 
       for (let i = 6; i >= 0; i--) {
         const d = new Date(today); d.setDate(today.getDate() - i);
-        const ds = d.toISOString().split('T')[0];
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const ds = `${yyyy}-${mm}-${dd}`;
         const label = d.toLocaleDateString('en-US', { weekday: 'short' });
         const dayPlan = planDays.find(x => x.date === ds) || planDays[6 - i] || null;
         const compDay = compData[ds];
@@ -153,7 +167,10 @@ const NutritionInsightsPage = () => {
       setTrendData(trendArr);
 
       // Today consumed
-      const todayStr = today.toISOString().split('T')[0];
+      const todayY = today.getFullYear();
+      const todayM = String(today.getMonth() + 1).padStart(2, '0');
+      const todayD = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${todayY}-${todayM}-${todayD}`;
       const todayPlan = planDays.find(x => x.date === todayStr) || planDays[0];
       const todayComp = compData[todayStr];
       let stats = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -170,13 +187,30 @@ const NutritionInsightsPage = () => {
       setConsumed(stats);
     };
     load();
+
+    const handleHydrationUpdate = (e) => {
+      const { date, amount } = e.detail;
+      setHydrationData(prev => prev.map(d => {
+        // d.date is 'Wed', so we need to match the actual date?
+        // It's easier to just call load() again for consistency
+        return d;
+      }));
+      // Just reload the data to be perfectly consistent
+      load();
+    };
+
+    window.addEventListener('hydration-update', handleHydrationUpdate);
+    return () => window.removeEventListener('hydration-update', handleHydrationUpdate);
   }, []);
 
   const border = isDark ? 'oklch(28% 0.03 152)' : 'oklch(88% 0.018 152)';
   const textPrimary = isDark ? 'oklch(94% 0.012 152)' : 'oklch(18% 0.02 152)';
   const targets = profile?.nutritionTargets;
-  const avgHydration = hydrationData.length > 0 ? Math.round(hydrationData.reduce((s, d) => s + d.amount, 0) / hydrationData.length) : 0;
-  const hydrationGoal = 2000;
+  const activeHydrationDays = hydrationData.filter(d => d.amount > 0).length || 1;
+  const avgHydration = hydrationData.length > 0 ? Math.round(hydrationData.reduce((s, d) => s + d.amount, 0) / activeHydrationDays) : 0;
+  const todayHydration = hydrationData.length > 0 ? hydrationData[hydrationData.length - 1].amount : 0;
+  const hydrationGoal = 2500; // Match dashboard goal of 2500ml
+  const overallWeekly = Math.round((mealBreakdown.breakfast + mealBreakdown.lunch + mealBreakdown.snack + mealBreakdown.dinner) / 4);
   const streak = complianceStats?.overallCompliance ?? 0;
 
   const LINES = [
@@ -205,8 +239,8 @@ const NutritionInsightsPage = () => {
         {/* Top stat cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
           <StatCard icon={Flame}        label="Calories today"    value={consumed.calories}      sub={`of ${targets?.targetCalories || '—'} kcal`}  color="oklch(62% 0.18 52)"  isDark={isDark} />
-          <StatCard icon={TrendingUp}   label="Weekly compliance" value={`${streak}%`}           sub="meal adherence"                                  color="var(--color-brand)"  isDark={isDark} />
-          <StatCard icon={Droplets}     label="Avg hydration"     value={`${avgHydration}ml`}    sub={`goal: ${hydrationGoal}ml/day`}                  color="oklch(58% 0.18 230)" isDark={isDark} />
+          <StatCard icon={TrendingUp}   label="Weekly compliance" value={`${overallWeekly}%`}    sub="meal adherence"                                  color="var(--color-brand)"  isDark={isDark} />
+          <StatCard icon={Droplets}     label="Hydration today"   value={`${todayHydration}ml`}  sub={`goal: ${hydrationGoal}ml/day`}                  color="oklch(58% 0.18 230)" isDark={isDark} />
           <StatCard icon={Award}        label="Meals eaten"       value={complianceStats?.eatenMeals ?? 0} sub="this week"                           color="oklch(55% 0.15 310)" isDark={isDark} />
         </div>
 
@@ -279,6 +313,11 @@ const NutritionInsightsPage = () => {
           </div>
         </div>
 
+        {/* Compliance Heatmap */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <ComplianceHeatmap months={3} />
+        </div>
+
         {/* Bottom row: meal compliance + hydration */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
           {/* Meal compliance breakdown */}
@@ -307,7 +346,7 @@ const NutritionInsightsPage = () => {
               })}
               <div style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'var(--color-brand-muted)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: 'var(--font-ui)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-brand)' }}>Overall this week</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-brand)', letterSpacing: '-0.03em' }}>{streak}%</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-brand)', letterSpacing: '-0.03em' }}>{overallWeekly}%</span>
               </div>
             </div>
           </div>

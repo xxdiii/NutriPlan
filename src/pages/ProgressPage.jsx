@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Utensils, Moon, Sun, User, ArrowLeft, TrendingUp, TrendingDown, Minus, Target, Calendar, Trash2 } from 'lucide-react';
 import WeightChart from '../components/progress/WeightChart';
 import WeightLogForm from '../components/progress/WeightLogForm';
+import BMITracker from '../components/progress/BMITracker';
 import {
   calculateProgress,
   calculateWeeklyAverage,
@@ -17,6 +18,8 @@ const ProgressPage = ({ setCurrentPage }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [weightLogs, setWeightLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Keeps the original onboarding weight so we can restore it if all logs are deleted
+  const originalWeightRef = useRef(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -26,11 +29,19 @@ const ProgressPage = ({ setCurrentPage }) => {
         const profile = await api.getUserProfile();
         if (profile && Object.keys(profile).length > 0) {
           setUserProfile(profile);
+          // Capture the "true" original weight once, before any log-driven mutations
+          if (originalWeightRef.current === null) {
+            originalWeightRef.current = profile.weight;
+          }
         } else {
           // Fallback to localStorage
           const localProfile = localStorage.getItem('userProfile');
           if (localProfile) {
-            setUserProfile(JSON.parse(localProfile));
+            const parsed = JSON.parse(localProfile);
+            setUserProfile(parsed);
+            if (originalWeightRef.current === null) {
+              originalWeightRef.current = parsed.weight;
+            }
           }
         }
 
@@ -113,6 +124,20 @@ const ProgressPage = ({ setCurrentPage }) => {
 
       // Update localStorage cache
       localStorage.setItem('weightLogs', JSON.stringify(updatedLogs));
+
+      // ── Restore profile.weight to the correct value after deletion ──
+      // If logs still remain, use the new latest log's weight.
+      // If all logs were deleted, revert to the original onboarding weight.
+      const restoredWeight = updatedLogs.length > 0
+        ? updatedLogs[updatedLogs.length - 1].weight
+        : (originalWeightRef.current ?? userProfile.weight);
+
+      if (restoredWeight !== userProfile.weight) {
+        const updatedProfile = { ...userProfile, weight: restoredWeight };
+        setUserProfile(updatedProfile);
+        await api.saveUserProfile(updatedProfile);
+        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+      }
     } catch (error) {
       console.error('Error deleting weight log:', error);
       alert('Failed to delete weight log. Please try again.');
@@ -368,13 +393,20 @@ const ProgressPage = ({ setCurrentPage }) => {
             )}
           </div>
 
-          {/* Log Form */}
-          <div>
+          {/* Log Form + BMI Tracker */}
+          <div className="space-y-6">
             <WeightLogForm onAddLog={handleAddLog} />
+
+            {/* BMI Tracker — auto-updates as weight logs are added */}
+            <BMITracker
+              currentWeight={currentWeight}
+              heightCm={userProfile.height}
+              weightLogs={weightLogs}
+            />
 
             {/* Goal Info */}
             {userProfile.goal !== 'maintain' && (
-              <div className={`mt-6 p-6 rounded-2xl ${isDark
+              <div className={`p-6 rounded-2xl ${isDark
                 ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20 border border-purple-800'
                 : 'bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200'
                 }`}>

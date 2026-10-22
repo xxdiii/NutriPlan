@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { ArrowRight, Utensils, CheckCircle2, TrendingUp, Flame, Droplets, Award } from 'lucide-react';
+import { api } from '../services/api';
+import { ArrowRight, Utensils, CheckCircle2, TrendingUp, Flame, Droplets, Award, RefreshCw } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────
    LOGIN PAGE
@@ -106,24 +107,52 @@ const LoginPage = ({ setCurrentPage }) => {
   const { isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaSvg, setCaptchaSvg] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaText, setCaptchaText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const loadCaptcha = async () => {
+    try {
+      const data = await api.getCaptcha();
+      setCaptchaSvg(data.svg);
+      setCaptchaToken(data.token);
+      setCaptchaText('');
+    } catch (err) {
+      console.error('Failed to load captcha', err);
+    }
+  };
+
+  useEffect(() => {
+    loadCaptcha();
+  }, []);
 
   const Card = isDark ? InsightCardDark : InsightCard;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!captchaText) {
+      setError('Please enter the captcha code');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
-      const result = await login(email, password);
+      const result = await login(email, password, captchaText, captchaToken);
       if (result.success) {
         setCurrentPage('dashboard');
+      } else if (result.requiresVerification) {
+        // Server has auto-resent the OTP; redirect to verification
+        sessionStorage.setItem('pendingVerificationEmail', result.email || email);
+        setCurrentPage('verify-email');
       } else {
         setError(result.error || 'Invalid email or password');
+        loadCaptcha(); // refresh captcha on failure
       }
     } catch {
       setError('An unexpected error occurred');
+      loadCaptcha(); // refresh captcha on failure
     } finally {
       setLoading(false);
     }
@@ -409,16 +438,72 @@ const LoginPage = ({ setCurrentPage }) => {
               </div>
 
               <div>
-                <label htmlFor="login-password" style={{
-                  display: 'block', fontFamily: 'var(--font-ui)', fontWeight: 600,
-                  fontSize: 'var(--text-sm)', color: isDark ? 'oklch(72% 0.02 152)' : 'oklch(42% 0.025 152)',
-                  marginBottom: '0.4rem', letterSpacing: '0.01em',
-                }}>Password</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.4rem' }}>
+                  <label htmlFor="login-password" style={{
+                    fontFamily: 'var(--font-ui)', fontWeight: 600,
+                    fontSize: 'var(--text-sm)', color: isDark ? 'oklch(72% 0.02 152)' : 'oklch(42% 0.025 152)',
+                    letterSpacing: '0.01em',
+                  }}>Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage('forgot-password')}
+                    style={{
+                      background: 'none', border: 'none', padding: 0,
+                      color: 'var(--color-brand)', fontWeight: 500,
+                      fontFamily: 'var(--font-ui)', fontSize: '0.75rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <input
                   id="login-password" type="password" value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="field" placeholder="••••••••"
                   autoComplete="current-password" required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="login-captcha" style={{
+                  display: 'block', fontFamily: 'var(--font-ui)', fontWeight: 600,
+                  fontSize: 'var(--text-sm)', color: isDark ? 'oklch(72% 0.02 152)' : 'oklch(42% 0.025 152)',
+                  marginBottom: '0.4rem', letterSpacing: '0.01em',
+                }}>Security Code</label>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <div 
+                        dangerouslySetInnerHTML={{ __html: captchaSvg }} 
+                        style={{ 
+                            background: '#f8fafc', 
+                            borderRadius: '0.5rem', 
+                            overflow: 'hidden', 
+                            border: `1px solid ${isDark ? 'oklch(28% 0.03 152)' : 'oklch(88% 0.018 152)'}`,
+                            flexShrink: 0,
+                            minWidth: '150px'
+                        }} 
+                    />
+                    <button 
+                        type="button" 
+                        onClick={loadCaptcha}
+                        title="Refresh captcha"
+                        style={{
+                            background: 'none', border: 'none', padding: '0.5rem',
+                            cursor: 'pointer', color: 'var(--color-brand)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            borderRadius: '0.375rem', transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = isDark ? 'oklch(25% 0.04 152)' : 'oklch(96% 0.02 152)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                        <RefreshCw size={18} strokeWidth={2.5} />
+                    </button>
+                </div>
+                <input
+                  id="login-captcha" type="text" value={captchaText}
+                  onChange={(e) => setCaptchaText(e.target.value)}
+                  className="field" placeholder="Type the characters above"
+                  autoComplete="off" required
                 />
               </div>
 

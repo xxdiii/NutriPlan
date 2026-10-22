@@ -1,0 +1,12 @@
+[eval]:1
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); async function main() { const users = await prisma.user.findMany(); for(const u of users) { console.log(u.email); } } main().catch(console.error).finally(()=>prisma.());
+                                                                                                                                                                                                                                                            ^
+Expected ident
+
+SyntaxError: Unexpected token '('
+    at makeContextifyScript (node:internal/vm:194:14)
+    at compileScript (node:internal/process/execution:388:10)
+    at evalTypeScript (node:internal/process/execution:260:22)
+    at node:internal/main/eval_string:71:3
+
+Node.js v24.8.0

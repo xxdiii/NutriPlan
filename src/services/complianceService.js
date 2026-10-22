@@ -25,12 +25,22 @@ const getStorageKey = () => {
 };
 
 /**
+ * Helper to get local date string YYYY-MM-DD
+ */
+const getLocalDateString = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Get compliance data for a specific date
  */
 export const getComplianceForDate = (date) => {
   const key = getStorageKey();
   const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
-  const dateKey = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+  const dateKey = typeof date === 'string' ? date : getLocalDateString(date);
   return complianceData[dateKey] || {
     date: dateKey,
     meals: {
@@ -49,7 +59,7 @@ export const getComplianceForDate = (date) => {
 export const markMealCompliance = (date, mealType, status) => {
   const key = getStorageKey();
   const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
-  const dateKey = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+  const dateKey = typeof date === 'string' ? date : getLocalDateString(date);
 
   if (!complianceData[dateKey]) {
     complianceData[dateKey] = {
@@ -92,7 +102,7 @@ export const getComplianceStats = (startDate, endDate) => {
   const dailyCompliance = [];
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateKey = d.toISOString().split('T')[0];
+    const dateKey = getLocalDateString(d);
     const dayData = complianceData[dateKey];
 
     if (dayData) {
@@ -159,7 +169,7 @@ export const calculateCombinedStreak = async (api) => {
 
   // limit streak check to 365 days to avoid infinite loops or excessive API calls
   for (let i = 0; i < 365; i++) {
-    const dateKey = currentDate.toISOString().split('T')[0];
+    const dateKey = getLocalDateString(currentDate);
     const dayData = complianceData[dateKey];
 
     let hasActivity = false;
@@ -216,7 +226,7 @@ export const calculateStreak = () => {
   let currentDate = new Date(today);
 
   while (true) {
-    const dateKey = currentDate.toISOString().split('T')[0];
+    const dateKey = getLocalDateString(currentDate);
     const dayData = complianceData[dateKey];
 
     // Check if at least one meal was eaten today
@@ -261,7 +271,7 @@ export const getWeeklyCompliance = () => {
  * Get today's compliance status
  */
 export const getTodayCompliance = () => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString(new Date());
   return getComplianceForDate(today);
 };
 
@@ -284,7 +294,7 @@ export const getWeeklyMealBreakdown = () => {
   for (let i = 0; i <= today.getDay(); i++) {
     const d = new Date(startOfWeek);
     d.setDate(startOfWeek.getDate() + i);
-    const dateKey = d.toISOString().split('T')[0];
+    const dateKey = getLocalDateString(d);
     const dayData = allData[dateKey];
     ['breakfast', 'lunch', 'snack', 'dinner'].forEach(m => {
       days[m]++;
@@ -298,4 +308,59 @@ export const getWeeklyMealBreakdown = () => {
     snack:     days.snack     > 0 ? Math.round((counts.snack     / days.snack)     * 100) : 0,
     dinner:    days.dinner    > 0 ? Math.round((counts.dinner    / days.dinner)    * 100) : 0,
   };
+};
+
+/**
+ * Get daily compliance data for the heatmap calendar.
+ * Returns one entry per calendar day from (months) months ago to today.
+ * @param {number} months - Number of months to look back (default 3)
+ * @returns {Array<{date: string, eaten: number, total: number, meals: Object, isFuture: boolean}>}
+ */
+export const getHeatmapData = (months = 3) => {
+  const key = getStorageKey();
+  const complianceData = JSON.parse(localStorage.getItem(key) || '{}');
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Start from the Monday of the week (months) ago
+  const start = new Date(today);
+  start.setMonth(start.getMonth() - months);
+  // Align to Monday
+  const startDay = start.getDay(); // 0=Sun
+  const daysToMonday = startDay === 0 ? -6 : 1 - startDay;
+  start.setDate(start.getDate() + daysToMonday);
+
+  const result = [];
+  const cursor = new Date(start);
+
+  while (cursor <= today) {
+    const dateKey = getLocalDateString(cursor);
+    const dayData = complianceData[dateKey];
+    let eaten = 0;
+    let total = 0;
+    const meals = { breakfast: null, lunch: null, snack: null, dinner: null };
+
+    if (dayData?.meals) {
+      Object.entries(dayData.meals).forEach(([meal, status]) => {
+        meals[meal] = status;
+        if (status !== null) {
+          total++;
+          if (status === 'eaten') eaten++;
+        }
+      });
+    }
+
+    result.push({
+      date: dateKey,
+      eaten,
+      total,
+      meals,
+      isFuture: false,
+    });
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return result;
 };
