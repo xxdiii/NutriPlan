@@ -12,26 +12,26 @@ import { useTheme } from '../context/ThemeContext';
 const FEATURES = [
   {
     icon: Shield,
-    title: 'Clinically aware',
-    description: 'PCOS, thyroid, anaemia, allergies — your plan respects every condition, every interaction.',
+    title: 'Health-aware',
+    description: 'Diet, allergies and dislikes are hard rules. Diabetes, blood pressure, thyroid and PCOS get glycaemic-load, sodium and ingredient checks on every meal.',
     number: '01',
   },
   {
     icon: Target,
     title: 'Goal-precise macros',
-    description: 'Bulk, cut, or maintain. Calorie targets that adapt as your weight moves.',
+    description: 'Bulk, cut, or maintain at the pace you pick, with protein set per kg of body weight.',
     number: '02',
   },
   {
     icon: Apple,
     title: 'Deeply regional',
-    description: 'South Indian, Punjabi, Bengali, coastal — real recipes from real kitchens.',
+    description: 'Punjabi, South Indian, Bengali, Gujarati, Maharashtrian and coastal dishes, ranked for your state.',
     number: '03',
   },
   {
     icon: ShoppingCart,
     title: 'Smart grocery lists',
-    description: 'Weekly lists, cost estimates, and store-order organisation.',
+    description: 'Weekly quantities for your whole household, grouped by aisle, with approximate ₹ costs.',
     number: '04',
   },
   {
@@ -43,15 +43,15 @@ const FEATURES = [
   {
     icon: Leaf,
     title: 'Instant swaps',
-    description: 'Hate a meal? Swap it in one tap. Nutritional equivalence guaranteed.',
+    description: 'Hate a meal? Swap it in one tap, re-portioned to the same calories.',
     number: '06',
   },
 ];
 
 const STATS = [
-  { value: '15+', label: 'Health conditions' },
-  { value: '1 000+', label: 'Regional recipes' },
-  { value: '94%', label: 'Reported success' },
+  { value: '190+', label: 'Indian recipes' },
+  { value: 'IFCT 2017', label: 'Government nutrition data' },
+  { value: '±5%', label: 'Daily calorie accuracy' },
 ];
 
 const STEPS = [
@@ -449,7 +449,7 @@ const LandingPage = ({ setCurrentPage }) => {
                 style={{ marginBottom: '2rem' }}
               >
                 <Shield size={11} />
-                Clinically validated · Culturally grounded
+                ICMR-NIN food data · Culturally grounded
               </div>
 
               {/* Headline */}
@@ -859,7 +859,7 @@ const LandingPage = ({ setCurrentPage }) => {
               System Architecture
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-display-sm)', lineHeight: 1.1, letterSpacing: '-0.03em', color: isDark ? 'oklch(95% 0.012 152)' : 'oklch(18% 0.02 152)', margin: '0 0 0.75rem' }}>
-              Built on a 4-layer AI architecture
+              How it's built
             </h2>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-base)', lineHeight: 1.65, color: isDark ? 'oklch(62% 0.02 152)' : 'oklch(42% 0.025 152)', margin: 0 }}>
               Inspired by the research paper <em>"Smart Diet Planner: An AI-Powered Web Application for Personalized Nutrition Management"</em> (ICFT 2025), using the Mifflin-St Jeor equation for accurate BMR/TDEE calculation.
@@ -889,9 +889,9 @@ const LandingPage = ({ setCurrentPage }) => {
               },
               {
                 layer: '03',
-                name: 'AI/ML Recommendation Engine',
-                tech: 'Rule-based + Mifflin-St Jeor',
-                desc: 'Calculates BMR and TDEE, selects nutritionally optimal meals, replaces allergens/dislikes with equivalent substitutes.',
+                name: 'Meal Planning Engine',
+                tech: 'Rule-based scoring + Mifflin-St Jeor',
+                desc: 'Calculates calorie and macro targets, filters by diet, allergies and dislikes, and portions Indian meals (dal + roti, rice, one-pot dishes) to hit them.',
                 color: 'oklch(55% 0.2 30)',
                 bg: isDark ? 'oklch(19% 0.04 30)' : 'oklch(95% 0.04 30)',
                 items: ['BMR / TDEE calculation', 'Allergy-safe filtering', 'Adaptive dislike learning', 'Budget-aware selection'],
@@ -899,8 +899,8 @@ const LandingPage = ({ setCurrentPage }) => {
               {
                 layer: '04',
                 name: 'Data & Analytics Module',
-                tech: 'SQLite via Prisma ORM',
-                desc: 'Secure persistent storage for user profiles, meal plans, compliance records, hydration, and weight logs with real-time sync.',
+                tech: 'SQLite via Prisma ORM · IFCT 2017',
+                desc: 'Stores profiles, meal plans, meal tracking, hydration and weight logs so they follow you across devices. Recipe nutrition is computed from the Indian Food Composition Tables.',
                 color: 'oklch(52% 0.18 310)',
                 bg: isDark ? 'oklch(19% 0.03 310)' : 'oklch(95% 0.03 310)',
                 items: ['Daily / weekly analytics', 'Weight trend tracking', 'Nutrition Insights', 'Compliance reports'],

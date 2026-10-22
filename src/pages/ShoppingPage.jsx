@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Utensils, Moon, Sun, ArrowLeft, ShoppingCart, PackageCheck } from 'lucide-react';
 import ShoppingList from '../components/shopping/ShoppingList';
-import PantryManager, { loadPantry, savePantry, normalisePantryName } from '../components/shopping/PantryManager';
-import { generateShoppingList, estimateCost } from '../services/shoppingListGenerator';
+import PantryManager, { loadPantry, normalisePantryName } from '../components/shopping/PantryManager';
 import { api } from '../services/api';
 
 const ShoppingPage = ({ setCurrentPage }) => {
@@ -24,22 +23,12 @@ const ShoppingPage = ({ setCurrentPage }) => {
   const loadShoppingList = async () => {
     setIsLoading(true);
     try {
-      let planData = await api.getMealPlan();
-      if (!planData) {
-        const savedPlan = localStorage.getItem('weeklyMealPlan');
-        if (savedPlan) planData = JSON.parse(savedPlan);
-      }
-
-      const userProfile = await api.getUserProfile() || JSON.parse(localStorage.getItem('userProfile') || '{}');
-
-      if (!planData || !planData.plan) { setIsLoading(false); return; }
-
-      const weekPlan = planData.plan;
-      const list = generateShoppingList(weekPlan);
-      const cost = estimateCost(list, userProfile.budget || 'medium', userProfile.servings || 1);
-
+      // Built on the server from the plan's weighed ingredients, scaled to each
+      // portion and the household size, with approximate ₹ prices.
+      const list = await api.getShoppingList();
+      if (!list) { setIsLoading(false); return; }
       setShoppingList(list);
-      setCostEstimate(cost);
+      setCostEstimate(list.cost);
     } catch (error) {
       console.error('Error loading shopping list:', error);
     } finally {

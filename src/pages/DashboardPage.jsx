@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight, Utensils } from 'lucide-react';
-import { createAndSaveMealPlan } from '../services/mealPlanGenerator';
+import { loadPlan, generatePlan, getCachedPlan } from '../services/mealPlanService';
+import { localDateString } from '../utils/dates';
 import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
 import { getComplianceForDate, getWeeklyMealBreakdown } from '../services/complianceService';
 import { api } from '../services/api';
@@ -15,7 +16,7 @@ const DashboardPage = ({ setCurrentPage }) => {
   const [mealPlan, setMealPlan] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate] = useState(() => new Date());
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,40 +61,10 @@ const DashboardPage = ({ setCurrentPage }) => {
           // but we don't redirect here, we let them see the dashboard
         }
 
-        // 2. Load Meal Plan
-        let apiPlan = null;
-        try {
-          apiPlan = await api.getMealPlan();
-        } catch (error) {
-          console.warn('Could not fetch API plan', error);
-        }
+        // 2. Load Meal Plan (the server copy includes swaps; older-format plans come back null)
+        setMealPlan(await loadPlan());
 
-        const localPlanStr = localStorage.getItem('weeklyMealPlan');
-        const localPlan = localPlanStr ? JSON.parse(localPlanStr) : null;
-
-        if (apiPlan && localPlan) {
-          // Compare dates to see if server has a freshly generated plan
-          const apiDate = new Date(apiPlan.createdAt).getTime();
-          const localDate = new Date(localPlan.createdAt).getTime();
-
-          // If API plan is strictly newer (by > 1 minute to avoid drift), take it
-          // Otherwise trust local (which may have swaps)
-          if (apiDate > localDate + 60000) {
-            setMealPlan(apiPlan);
-            localStorage.setItem('weeklyMealPlan', JSON.stringify(apiPlan));
-          } else {
-            setMealPlan(localPlan);
-          }
-        } else if (localPlan) {
-          setMealPlan(localPlan);
-        } else if (apiPlan) {
-          setMealPlan(apiPlan);
-          localStorage.setItem('weeklyMealPlan', JSON.stringify(apiPlan));
-        }
-
-        // 3. Load Compliance
-        // Note: complianceService still uses localStorage. Ideally refactor that too.
-        // TODO: Fully migrate compliance service to the backend.
+        // 3. Compliance is read from the local cache, which is loaded from the server at login.
         // The weekly streak is handled by StreakWidget's own state.
         setMealBreakdown(getWeeklyMealBreakdown());
       } catch (error) {
@@ -103,9 +74,7 @@ const DashboardPage = ({ setCurrentPage }) => {
         if (localDetails) {
           setUserProfile(JSON.parse(localDetails));
         }
-
-        const localPlan = localStorage.getItem('weeklyMealPlan');
-        if (localPlan) setMealPlan(JSON.parse(localPlan));
+        setMealPlan(getCachedPlan());
       } finally {
         setIsLoadingData(false);
       }
@@ -118,9 +87,8 @@ const DashboardPage = ({ setCurrentPage }) => {
     if (!mealPlan || !mealPlan.plan) return;
 
     // Get today's plan
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const todaysPlan = mealPlan.plan.find(p => p.date === todayStr) || mealPlan.plan[0]; // Fallback to first day if date doesn't match
+    const todayStr = localDateString();
+    const todaysPlan = mealPlan.plan.find(p => p.date === todayStr);
 
     if (todaysPlan) {
       const compliance = getComplianceForDate(todayStr);
@@ -145,28 +113,19 @@ const DashboardPage = ({ setCurrentPage }) => {
     setIsGenerating(true);
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const newPlan = await createAndSaveMealPlan(userProfile);
-      const planObj = {
-        plan: newPlan,
-        createdAt: new Date().toISOString()
-      };
-
-      setMealPlan(planObj);
-      localStorage.setItem('weeklyMealPlan', JSON.stringify(planObj));
+      setMealPlan(await generatePlan());
     } catch (error) {
       console.error('Failed to generate meal plan:', error);
-      alert('Failed to generate meal plan. Please try again.');
+      alert(error.message || 'Failed to generate meal plan. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   };
 
+  // Today's meals, or nothing once the plan's week has passed.
   const getTodaysMeals = () => {
     if (!mealPlan || !mealPlan.plan) return null;
-    return mealPlan.plan[0]; // First day is today
+    return mealPlan.plan.find(day => day.date === localDateString()) || null;
   };
 
   const todaysMeals = getTodaysMeals();
@@ -191,8 +150,8 @@ const DashboardPage = ({ setCurrentPage }) => {
     );
   }
 
-  // If no profile exists or profile is empty, prompt user to complete onboarding
-  if (!userProfile || Object.keys(userProfile).length === 0) {
+  // If no profile exists or onboarding was never finished, prompt user to complete onboarding
+  if (!userProfile?.nutritionTargets) {
     return (
       <div style={{
         minHeight: '50vh',

@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Clock, ChefHat, Users, Flame, Target, TrendingUp, Check, AlertCircle, Heart, ChevronRight, Play } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
+import RecipeImage from '../common/RecipeImage';
+import { formatDuration } from '../../utils/dates';
 
 const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
   const { isDark } = useTheme();
+  // Meals from a plan carry portion details; recipes from the browser are per serving.
+  const isPlannedMeal = Boolean(recipe?.components);
   const [activeTab, setActiveTab] = useState('ingredients');
   const [isFavorite, setIsFavorite] = useState(false);
   const [loadingFav, setLoadingFav] = useState(false);
@@ -83,11 +87,7 @@ const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
         {/* Hero Section - Parallax style */}
         <div className="relative h-64 md:h-80 shrink-0 overflow-hidden">
           <div className="absolute inset-0 bg-gray-900 z-0">
-            <img
-              src={recipe.imageUrl}
-              alt={recipe.name}
-              className="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-105 will-change-transform"
-            />
+            <RecipeImage recipe={recipe} className="w-full h-full opacity-90" emojiClassName="text-8xl" />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10" />
 
@@ -98,7 +98,7 @@ const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
                 {mealType}
               </span>
               <span className="px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-sm text-emerald-300 text-xs font-bold uppercase tracking-wider border border-emerald-500/20">
-                {recipe.active || 'Classic'}
+                {(recipe.cuisine || 'classic').replace(/_/g, ' ')}
               </span>
             </div>
             <button
@@ -118,7 +118,7 @@ const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
             <div className="flex flex-wrap items-center gap-4 text-white/90">
               <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/10">
                 <Clock className="w-4 h-4 text-emerald-400" />
-                <span className="font-medium text-sm">{recipe.prepTime + recipe.cookTime} mins</span>
+                <span className="font-medium text-sm">{formatDuration(recipe.prepTime + recipe.cookTime)}</span>
               </div>
               <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/10">
                 <Flame className="w-4 h-4 text-orange-400" />
@@ -153,7 +153,10 @@ const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
 
             {/* Macro Rings (Mini) */}
             <div className={`p-5 rounded-2xl ${cardClasses}`}>
-              <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${textMuted}`}>Macros per serving</h4>
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-1 ${textMuted}`}>
+                {isPlannedMeal ? 'Your portion' : 'Macros per serving'}
+              </h4>
+              <p className={`text-xs mb-4 ${textMuted}`}>{recipe.portionLabel || recipe.servingUnit}</p>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Protein</span>
@@ -172,7 +175,7 @@ const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
 
             {/* Tags */}
             <div className="flex flex-wrap gap-2">
-              {recipe.tags.slice(0, 5).map((tag, i) => (
+              {(recipe.tags || []).slice(0, 5).map((tag, i) => (
                 <span key={i} className={`text-[10px] px-2.5 py-1 rounded-lg font-medium uppercase tracking-wide opacity-70 border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                   {tag}
                 </span>
@@ -213,7 +216,11 @@ const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
                 <div className="space-y-6 animate-fadeIn">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-2xl font-bold">What you need</h3>
-                    <span className={`text-sm ${textMuted}`}>{recipe.ingredients.length} items</span>
+                    <span className={`text-sm ${textMuted}`}>
+                      {isPlannedMeal
+                        ? recipe.servings > 1 ? `For ${recipe.servings} people` : 'For your portion'
+                        : `Makes ${recipe.servings} serving${recipe.servings === 1 ? '' : 's'}`}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -288,6 +295,41 @@ const RecipeDetailModal = ({ recipe, isOpen, onClose, mealType }) => {
                       <span className={`text-xs font-bold uppercase ${textMuted}`}>Fat</span>
                     </div>
                   </div>
+
+                  {/* Micronutrients and more, calculated from the ingredients */}
+                  {recipe.nutrition && (
+                    <div className={`p-5 rounded-2xl ${cardClasses}`}>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-6 text-sm">
+                        {[
+                          ['Fibre', `${Math.round(recipe.nutrition.fibre)} g`],
+                          ['Sugar', `${Math.round(recipe.nutrition.sugar)} g`],
+                          ['Sodium', `${Math.round(recipe.nutrition.sodium)} mg`],
+                          ['Iron', `${recipe.nutrition.iron.toFixed(1)} mg`],
+                          ['Calcium', `${Math.round(recipe.nutrition.calcium)} mg`],
+                          ['Vitamin C', `${Math.round(recipe.nutrition.vitC)} mg`],
+                          ['Glycaemic load', Math.round(recipe.glycaemicLoad)],
+                          ...(recipe.costInr ? [['Approx. cost', `₹${Math.round(recipe.costInr)}`]] : []),
+                        ].map(([label, value]) => (
+                          <div key={label} className="flex justify-between">
+                            <span className={textMuted}>{label}</span>
+                            <span className="font-semibold">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {!recipe.isCustom && (
+                        <p className={`mt-4 text-xs ${textMuted}`}>
+                          Calculated from ingredient weights using the Indian Food Composition Tables 2017 (ICMR-NIN). Glycaemic load and cost are estimates.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Health notes for this user */}
+                  {recipe.warnings?.length > 0 && (
+                    <div className={`p-4 rounded-xl border space-y-1 text-sm ${isDark ? 'bg-yellow-900/10 border-yellow-900/30 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-800'}`}>
+                      {recipe.warnings.map((w, i) => <p key={i}>{w.message}</p>)}
+                    </div>
+                  )}
 
                   {/* Warnings */}
                   {recipe.allergens && recipe.allergens.length > 0 && (
