@@ -3,11 +3,12 @@ import { useTheme } from '../context/ThemeContext';
 import { Sparkles, Send, User, Bot, Zap } from 'lucide-react';
 import { api } from '../services/api';
 import { getWeeklyCompliance } from '../services/complianceService';
+import { normaliseGoal } from '../../shared/targets';
 
 // ─── Rule-based response engine ──────────────────────────────────────────────
 const generateResponse = (message, profile, weeklyCompliance) => {
   const msg = message.toLowerCase();
-  const goal = profile?.goal || 'maintain';
+  const goal = normaliseGoal(profile?.goal);
   const calories = profile?.nutritionTargets?.targetCalories || 2000;
   const protein = profile?.nutritionTargets?.macros?.protein || 150;
   const carbs = profile?.nutritionTargets?.macros?.carbs || 200;
@@ -29,7 +30,7 @@ const generateResponse = (message, profile, weeklyCompliance) => {
 
   // BMR / metabolism
   if (msg.includes('bmr') || msg.includes('basal') || msg.includes('metabolism') || msg.includes('tdee')) {
-    return `Here are your key metabolic numbers:\n\n• **BMR** (Basal Metabolic Rate): **${bmr} kcal/day** — what your body burns at rest\n• **TDEE** (Total Daily Energy Expenditure): **${tdee} kcal/day** — with your activity level\n• **Target Calories**: **${calories} kcal/day** — adjusted for your ${goal === 'lose' ? 'weight loss' : goal === 'gain' ? 'muscle gain' : 'maintenance'} goal\n\nThese are calculated using the **Mifflin-St Jeor equation**, which is the most accurate standard formula.`;
+    return `Here are your key metabolic numbers:\n\n• **BMR** (Basal Metabolic Rate): **${bmr} kcal/day** — what your body burns at rest\n• **TDEE** (Total Daily Energy Expenditure): **${tdee} kcal/day** — with your activity level\n• **Target Calories**: **${calories} kcal/day** — adjusted for your ${goal === 'cut' ? 'weight loss' : goal === 'bulk' ? 'muscle gain' : 'maintenance'} goal\n\nThese are calculated using the **Mifflin-St Jeor equation**, which is the most accurate standard formula.`;
   }
 
   // Protein questions
@@ -50,15 +51,15 @@ const generateResponse = (message, profile, weeklyCompliance) => {
   // Water / hydration
   if (msg.includes('water') || msg.includes('hydrat') || msg.includes('drink')) {
     const target = Math.round(weight * 35); // 35ml per kg
-    return `Your recommended daily water intake is **${target}ml** (~${(target / 1000).toFixed(1)}L).\n\nTips:\n• Drink a glass of water first thing in the morning\n• Keep a bottle at your desk\n• Add a glass before each meal (helps with satiety)\n• ${goal === 'lose' ? 'Drinking water 30 min before meals can reduce calorie intake by up to 13%!' : 'Proper hydration improves muscle recovery and performance!'}\n\nYour hydration is tracked daily — check the Dashboard for your progress.`;
+    return `Your recommended daily water intake is **${target}ml** (~${(target / 1000).toFixed(1)}L).\n\nTips:\n• Drink a glass of water first thing in the morning\n• Keep a bottle at your desk\n• Add a glass before each meal (helps with satiety)\n• ${goal === 'cut' ? 'Drinking water 30 min before meals can reduce calorie intake by up to 13%!' : 'Proper hydration improves muscle recovery and performance!'}\n\nYour hydration is tracked daily — check the Dashboard for your progress.`;
   }
 
   // Goal / weight
   if (msg.includes('goal') || msg.includes('weight') || msg.includes('target')) {
     const diff = Math.abs(weight - targetWeight).toFixed(1);
-    if (goal === 'lose') {
+    if (goal === 'cut') {
       return `Your goal is to **lose weight** — from **${weight}kg to ${targetWeight}kg** (${diff}kg to go).\n\nYour plan:\n• Calorie deficit: ~${Math.round(tdee - calories)} kcal/day\n• Expected rate: ~0.5kg/week\n• Focus on: high protein (${protein}g/day), fiber-rich foods, and staying within ${calories} kcal\n\nConsistency over perfection — even 80% compliance gets great results!`;
-    } else if (goal === 'gain') {
+    } else if (goal === 'bulk') {
       return `Your goal is to **gain muscle** — target weight **${targetWeight}kg** (${diff}kg to go).\n\nYour plan:\n• Calorie surplus: ~${Math.round(calories - tdee)} kcal/day\n• High protein: **${protein}g/day** is essential for muscle synthesis\n• Strength training 3–4x/week amplifies results\n• Don't skip carbs — they fuel workouts and spare protein for muscle building.`;
     } else {
       return `Your goal is to **maintain weight** at **${weight}kg**.\n\nYour calorie target of **${calories} kcal** matches your TDEE. Focus on:\n• Consistent meal timing\n• Balanced macros (${protein}g protein / ${carbs}g carbs / ${fat}g fat)\n• Regular hydration\n• Keep compliance above 80% for optimal health.`;
@@ -96,7 +97,7 @@ const generateResponse = (message, profile, weeklyCompliance) => {
 
   // Meal timing
   if (msg.includes('when') || msg.includes('timing') || msg.includes('time') || msg.includes('schedule')) {
-    return `Optimal meal timing for your ${goal} goal:\n\n• 🌅 **Breakfast**: 7–9 AM (within 1 hour of waking)\n• 🍽️ **Lunch**: 12–1 PM\n• 🍎 **Snack**: 3–4 PM (before energy dip)\n• 🌙 **Dinner**: 7–8 PM (2–3 hours before bed)\n\n${goal === 'gain' ? 'Post-workout: Eat protein + carbs within 30 minutes of training for best muscle synthesis.' : goal === 'lose' ? 'Avoid eating after 8 PM — evening calories are more likely to be stored as fat.' : 'Consistent timing regulates hunger hormones and improves metabolism.'}`;
+    return `Optimal meal timing for your ${goal} goal:\n\n• 🌅 **Breakfast**: 7–9 AM (within 1 hour of waking)\n• 🍽️ **Lunch**: 12–1 PM\n• 🍎 **Snack**: 3–4 PM (before energy dip)\n• 🌙 **Dinner**: 7–8 PM (2–3 hours before bed)\n\n${goal === 'bulk' ? 'Post-workout: Eat protein + carbs within 30 minutes of training for best muscle synthesis.' : goal === 'cut' ? 'Avoid eating after 8 PM — evening calories are more likely to be stored as fat.' : 'Consistent timing regulates hunger hormones and improves metabolism.'}`;
   }
 
   // Default / greeting

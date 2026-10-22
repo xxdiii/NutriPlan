@@ -12,6 +12,7 @@ import {
   DIFFICULTY_OPTIONS,
   MEAL_TYPE_OPTIONS,
 } from '../../services/customRecipeService';
+import { ALLERGENS } from '../../utils/constants';
 
 // ── Tiny helpers ──────────────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ const CustomRecipeForm = ({ recipe = null, onSave, onClose }) => {
         name: recipe.name ?? '',
         cuisine: recipe.cuisine ?? 'international',
         dietaryType: recipe.dietaryType ?? [],
-        mealTypes: recipe.mealTypes ?? [],
+        mealTypes: recipe.meals ?? recipe.mealTypes ?? [],
         prepTime: recipe.prepTime ?? 10,
         cookTime: recipe.cookTime ?? 20,
         difficulty: recipe.difficulty ?? 'beginner',
@@ -140,6 +141,8 @@ const CustomRecipeForm = ({ recipe = null, onSave, onClose }) => {
   const [errors, setErrors] = useState({});
   const [tagInput, setTagInput] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   // ── Generic field update ──────────────────────────────────────────────────
   const set = useCallback((field, value) => {
@@ -183,7 +186,7 @@ const CustomRecipeForm = ({ recipe = null, onSave, onClose }) => {
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
 
@@ -207,12 +210,19 @@ const CustomRecipeForm = ({ recipe = null, onSave, onClose }) => {
       servings: Number(form.servings),
     };
 
-    const saved = isEdit
-      ? updateCustomRecipe(recipe.id, cleaned)
-      : addCustomRecipe(cleaned);
-
-    onSave?.(saved);
-    onClose?.();
+    setSaving(true);
+    setSaveError('');
+    try {
+      const saved = isEdit
+        ? await updateCustomRecipe(recipe.id, cleaned)
+        : await addCustomRecipe(cleaned);
+      onSave?.(saved);
+      onClose?.();
+    } catch (error) {
+      setSaveError(error.message || 'Could not save the recipe.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Section divider ────────────────────────────────────────────────────────
@@ -333,6 +343,17 @@ const CustomRecipeForm = ({ recipe = null, onSave, onClose }) => {
                 ))}
               </div>
               {errors.dietaryType && <p className="text-red-500 text-xs mt-2">{errors.dietaryType}</p>}
+            </div>
+          </Section>
+
+          {/* ALLERGENS: the meal planner hides this recipe from anyone allergic to these */}
+          <Section title="Contains allergens">
+            <div className="flex flex-wrap gap-2">
+              {ALLERGENS.map(a => (
+                <TogglePill key={a.id} label={a.name} isDark={isDark}
+                  active={form.allergens.includes(a.id)}
+                  onClick={() => toggleMulti('allergens', a.id)} />
+              ))}
             </div>
           </Section>
 
@@ -473,11 +494,12 @@ const CustomRecipeForm = ({ recipe = null, onSave, onClose }) => {
               ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-800' : 'border-gray-200 text-gray-700 hover:bg-gray-100'}`}>
             Cancel
           </button>
-          <button type="submit" form="" onClick={handleSubmit}
-            className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-lg shadow-emerald-900/20">
-            {isEdit ? 'Save Changes' : '🍳 Add Recipe'}
+          <button type="submit" form="" onClick={handleSubmit} disabled={saving}
+            className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white transition-colors shadow-lg shadow-emerald-900/20">
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : '🍳 Add Recipe'}
           </button>
         </div>
+        {saveError && <p className="px-6 pb-4 text-red-500 text-sm">{saveError}</p>}
       </div>
     </div>
   );
