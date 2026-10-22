@@ -2,6 +2,7 @@
 // ingredient weights and the food catalogue. Nothing here is typed in by hand.
 import { createRequire } from 'node:module';
 import { FOODS } from '../data/foods.js';
+import { metroOverride } from '../data/prices.js';
 
 const require = createRequire(import.meta.url);
 const ifct = require('../data/ifct-foods.json');
@@ -29,7 +30,8 @@ const buildFoodTable = () => {
             animal: opts.animal || null,
             flags: opts.flags || [],
             gi: opts.gi ?? null,
-            price: opts.price ?? null,
+            // Metro ₹/kg: government (DoCA) prices where published, otherwise the estimate in foods.js.
+            price: metroOverride(key) ?? opts.price ?? null,
             unit: opts.unit ? { name: opts.unit[0], grams: opts.unit[1] } : null,
         });
     }

@@ -280,6 +280,41 @@ export const api = {
         return handleResponse(res);
     },
 
+    // Pantry: foods at home with optional grams (null = have enough) and expiry date
+    getPantry: async () => {
+        const res = await fetch(`${API_URL}/pantry`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    searchPantryFoods: async (q) => {
+        const res = await fetch(`${API_URL}/pantry/search?${new URLSearchParams({ q })}`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    savePantryItem: async (foodId, { grams = null, expiresOn = null } = {}) => {
+        const res = await fetch(`${API_URL}/pantry/${foodId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ grams, expiresOn })
+        });
+        return handleResponse(res);
+    },
+
+    deletePantryItem: async (foodId) => {
+        const res = await fetch(`${API_URL}/pantry/${foodId}`, { method: 'DELETE', headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    // One-time move of the old name-only pantry to the server
+    importPantry: async (names) => {
+        const res = await fetch(`${API_URL}/pantry/import`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ names })
+        });
+        return handleResponse(res);
+    },
+
     // AI coach. Changes it suggests are proposals, applied only when the user confirms.
     getCoachMessages: async () => {
         const res = await fetch(`${API_URL}/coach/messages`, { headers: getHeaders() });

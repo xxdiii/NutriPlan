@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { parseJson } from '../lib/auth.js';
 import { loadProfile } from '../routes/profile.js';
-import { loadRecipesForUser } from './recipes.js';
+import { loadPricedRecipes } from './prices.js';
 import { userCatalogue, logsBetween, dailyTotals, toLogResponse } from './foodLogs.js';
 import { runCheckIn } from './adaptiveCheckIn.js';
 import { matchParsedItem, sumNutrition } from '../engine/foodMatch.js';
@@ -30,13 +30,13 @@ const compactDay = (day) => ({
 });
 
 /** Lazily loaded data for one coach turn. */
-const createLoader = (userId) => {
+const createLoader = (userId, today) => {
     const cache = {};
     const once = (key, fn) => (cache[key] ??= fn());
     return {
         profile: () => once('profile', () => loadProfile(userId)),
         planRow: () => once('plan', () => prisma.mealPlan.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } })),
-        recipes: () => once('recipes', () => loadRecipesForUser(userId)),
+        recipes: () => once('recipes', async () => loadPricedRecipes(userId, await loadProfile(userId), today)),
         catalogue: () => once('catalogue', () => userCatalogue(userId)),
     };
 };
@@ -90,7 +90,7 @@ const planProposal = ({ action, title, summary, row, before, after }) => {
  * @param today  the user's local date, YYYY-MM-DD
  */
 export const createCoachTools = (userId, today) => {
-    const data = createLoader(userId);
+    const data = createLoader(userId, today);
 
     return {
         async get_plan({ start_date, days = 3 }) {
@@ -243,7 +243,7 @@ export const createCoachTools = (userId, today) => {
 
 /** Compact text summary of the user's data for the system prompt (no name or email). */
 export const buildCoachContext = async (userId, today) => {
-    const data = createLoader(userId);
+    const data = createLoader(userId, today);
     const [profile, row] = await Promise.all([data.profile(), data.planRow()]);
     const weekAgo = addDays(today, -7);
     const totals = dailyTotals(await logsBetween(userId, weekAgo, today));

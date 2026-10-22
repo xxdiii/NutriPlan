@@ -4,7 +4,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { jsPDF } from "jspdf";
 import { readSynced, writeSynced } from '../../services/syncedStorage';
 
-const ShoppingList = ({ shoppingList, costEstimate }) => {
+/**
+ * @param shoppingList  from the server: items with what to buy (packs), pantry status and ₹
+ * @param onHaveIt      optional: mark an item as already at home (adds it to the pantry)
+ */
+const ShoppingList = ({ shoppingList, costEstimate, onHaveIt }) => {
   const { isDark } = useTheme();
   // Load checked items (cached locally, synced to the server)
   const [checkedItems, setCheckedItems] = useState(() => readSynced('shoppingChecked', {}) || {});
@@ -81,7 +85,31 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
     window.print();
   };
 
+  // Plain text by aisle, built on the server (pantry items left out).
+  const shareText = () => shoppingList.shareText || shoppingList.allIngredients.map(i => `- ${i.display}`).join('\n');
+
+  const handleWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText())}`, '_blank', 'noopener');
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({ title: 'Shopping list', text: shareText() });
+    } catch (err) {
+      if (err?.name !== 'AbortError') console.error('Share failed:', err);
+    }
+  };
+
   const handleCopy = async () => {
+    if (shoppingList.shareText) {
+      try {
+        await navigator.clipboard.writeText(shoppingList.shareText);
+        alert('Shopping list copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+      }
+      return;
+    }
     let content = "🛒 WEEKLY SHOPPING LIST\n\n";
 
     Object.keys(shoppingList.byCategory).forEach(category => {
@@ -182,6 +210,27 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3">
           <button
+            onClick={handleWhatsApp}
+            className="px-4 py-2.5 rounded-xl font-medium flex items-center space-x-2 transition-all bg-[#25D366] text-white hover:brightness-95"
+            title="Send on WhatsApp"
+          >
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </button>
+          {typeof navigator !== 'undefined' && navigator.share && (
+            <button
+              onClick={handleShare}
+              className={`px-4 py-2.5 rounded-xl font-medium flex items-center space-x-2 transition-all ${isDark
+                ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                }`}
+              title="Share"
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Share</span>
+            </button>
+          )}
+          <button
             onClick={handleCopy}
             className={`px-4 py-2.5 rounded-xl font-medium flex items-center space-x-2 transition-all ${isDark
               ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
@@ -245,12 +294,11 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
         {costEstimate?.total > 0 && (
           <div className={`mt-3 pt-3 border-t text-sm flex flex-wrap justify-between gap-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-              Estimated cost{costEstimate.cookFor > 1 ? ` for ${costEstimate.cookFor} people` : ''}
+              At the shop{costEstimate.cookFor > 1 ? ` for ${costEstimate.cookFor} people` : ''} (whole packs)
             </span>
             <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              ₹{costEstimate.total.toLocaleString('en-IN')} / week · ₹{costEstimate.perPersonPerDay} per person per day
+              ₹{costEstimate.total.toLocaleString('en-IN')} · food used ₹{(costEstimate.used ?? costEstimate.total).toLocaleString('en-IN')}
             </span>
-            <span className={`w-full text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{costEstimate.note}</span>
           </div>
         )}
       </div>
@@ -339,13 +387,26 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
                             <div className={`text-sm font-medium truncate ${isChecked ? 'line-through' : (isDark ? 'text-gray-200' : 'text-gray-900')}`}>
                               {item.display || item.original}
                             </div>
-                            {/* Show usage count if > 1 meal */}
-                            {item.count > 1 && !isChecked && (
-                              <div className={`text-xs mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                                Used in {item.count} meals
+                            {!isChecked && (
+                              <div className={`text-xs mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                                {item.buy && <span>Need {item.amount}{item.buy.leftover > 0 ? ` · ${item.buy.leftover} left over` : ''}</span>}
+                                {item.buy?.costInr > 0 && <span>₹{item.buy.costInr}</span>}
+                                {item.count > 1 && <span>{item.count} meals</span>}
+                                {item.status === 'partial' && <span className="text-emerald-600">part from pantry</span>}
+                                {item.status === 'in_pantry' && <span className="text-emerald-600">in your pantry</span>}
+                                {item.inSeason === false && <span className="text-amber-600">out of season, pricier</span>}
                               </div>
                             )}
                           </div>
+                          {onHaveIt && item.status === 'buy' && !isChecked && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onHaveIt(item); }}
+                              className={`text-xs px-2 py-1 rounded-lg flex-shrink-0 ${isDark ? 'text-emerald-400 hover:bg-gray-700' : 'text-emerald-700 hover:bg-emerald-50'}`}
+                              title="I already have this: add to pantry"
+                            >
+                              Have it
+                            </button>
+                          )}
                         </div>
                       );
                     })}

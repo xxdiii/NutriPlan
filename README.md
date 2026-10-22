@@ -13,7 +13,9 @@ NutriPlan is a full-stack web app that builds weekly Indian meal plans around yo
 - **Adaptive targets**: a weekly check-in estimates your real maintenance calories from your food log and weight trend (energy balance, blended with the formula by how much data you have). Changes are capped at ±150 kcal a week, never below 1,200/1,500 kcal or faster than 1% body weight loss a week; accepting rebuilds the rest of the week's plan. The weight chart shows the smoothed trend.
 - **Tracking**: meal compliance and streaks, real intake from the food log, weight chart with trend and BMI, hydration. All of it is saved on the server, so it follows you across devices.
 - **AI coach that acts on your plan**: ask in English, Hindi or Hinglish ("shaadi hai aaj raat", "travelling this weekend, no kitchen", "swap tomorrow's lunch for something with paneer", "2 samose aur chai li"). Gemini reads your plan, log and targets through tools and *proposes* changes that the planner computes (eating-out calorie budgets, lighter meals around an event, swaps, food logs); you see a before/after card and nothing is saved until you tap Apply. Meals already eaten are never changed. It won't diagnose, can't lower your targets, and answers crisis or disordered-eating messages with care and helpline details.
-- **Shopping list**: weekly quantities for your whole household grouped by aisle, with approximate ₹ costs, pantry mode and PDF/print/copy.
+- **₹ budget planning**: set a weekly food budget for the household (or use your budget level) and Metro or Tier-2 prices. Recipe costs are calculated from ingredient weights at your prices; staples use the government's DoCA all-India retail prices, out-of-season produce costs more, and the planner swaps the priciest meals for cheaper ones with similar calories and protein until the week fits. A "protein for your money" panel compares ₹ per 10 g protein (dal and soya vs paneer).
+- **Smart shopping list**: quantities for your household rounded to packs you can buy (2 × 500 g dal, a tray of 12 eggs), what's left over, ₹ for what you buy, out-of-season flags, and share by WhatsApp or the share sheet.
+- **Pantry**: what you have, with optional amounts and expiry dates; the shopping list subtracts it and new plans use items about to expire first.
 - **Recipes**: browse and filter, favourite, and add your own recipes (with allergen tags).
 - **Auth**: email + password with captcha, 6-digit email verification and password reset; unverified accounts can't log in.
 - **Dark mode**, responsive UI.
@@ -87,10 +89,10 @@ npm test
 ├── shared/targets.js        # Calorie/macro targets, used by browser and server
 ├── server/
 │   ├── index.js             # Express app
-│   ├── routes/              # auth, profile, meal-plan, recipes, tracking, favorites, user-data, logs, adaptive, coach
+│   ├── routes/              # auth, profile, meal-plan, recipes, tracking, favorites, user-data, logs, adaptive, coach, pantry
 │   ├── services/            # gemini.js, coach.js + coachTools.js (AI coach), foodLogs.js, recipes.js
-│   ├── engine/              # planner, nutrition, constraints, shopping, foodMatch, adaptive, coachActions (pure, tested)
-│   ├── data/                # foods.js (ingredients), recipes/ (192 planned + 8 log-only recipes), ifct-foods.json
+│   ├── engine/              # planner, nutrition, constraints, shopping, foodMatch, adaptive, coachActions, cost, budget (pure, tested)
+│   ├── data/                # foods.js (ingredients), recipes/ (192 planned + 8 log-only recipes), ifct-foods.json, prices.js, packs.js
 │   ├── scripts/             # seed.js, extract-ifct.js
 │   └── prisma/schema.prisma
 └── src/                     # React app (pages, components, services)
@@ -107,7 +109,10 @@ npm test
 | `POST` | `/api/meal-plan/generate` | Generate and save a new weekly plan |
 | `GET` | `/api/meal-plan/alternatives` | Swap options for a meal (`date`, `slot`) |
 | `POST` | `/api/meal-plan/swap` | Swap a meal |
-| `GET` | `/api/meal-plan/shopping-list` | Shopping list with ₹ estimate |
+| `GET` | `/api/meal-plan/shopping-list` | Shopping list: packs to buy, pantry status, ₹, budget, protein for money, share text |
+| `GET/PUT/DELETE` | `/api/pantry[/:foodId]` | Pantry items (`grams` optional, `expiresOn`) |
+| `GET` | `/api/pantry/search` | Search all ingredients (`q`) |
+| `POST` | `/api/pantry/import` | Import the old name-only pantry |
 | `GET` | `/api/recipes` | Browse recipes (`q`, `meal`, `diet`, `cuisine`, `maxTime`) |
 | `POST/PUT/DELETE` | `/api/recipes/custom[/:id]` | Your own recipes |
 | `GET/POST` | `/api/compliance[/:date]` | Meal tracking |
@@ -131,7 +136,8 @@ npm test
 
 - Food logging and the coach: only the text or photo you send (and, for the coach, a summary of your plan, log and targets) goes to Google Gemini, never your name or email. Gemini's free tier may use inputs to improve Google's products, so don't log anything private.
 - Nutrient values: *Indian Food Composition Tables 2017*, ICMR-National Institute of Nutrition (Longvah et al.). Foods IFCT doesn't cover (curd, oats, sabudana, bread, ...) use USDA FoodData Central values; the source is recorded per food in `server/data/foods.js`.
-- Glycaemic index values and ingredient prices are estimates; the app says so where they are shown.
+- Prices: all-India average retail prices for 16 staples from the Dept. of Consumer Affairs Price Monitoring Cell (fcainfoweb.nic.in, 22 Oct 2026); metro prices add an estimated 10%. Other ingredient prices, tier-2 discounts and the seasonal calendar are estimates, and every price row records its source.
+- Glycaemic index values are estimates; the app says so where they are shown.
 - NutriPlan is for information only and is not medical advice.
 
 ## 🗺️ Roadmap

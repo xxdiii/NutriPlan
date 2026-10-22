@@ -1,34 +1,28 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Utensils, Moon, Sun, ArrowLeft, ShoppingCart, PackageCheck } from 'lucide-react';
 import ShoppingList from '../components/shopping/ShoppingList';
-import PantryManager, { loadPantry, normalisePantryName } from '../components/shopping/PantryManager';
+import PantryManager from '../components/shopping/PantryManager';
+import { importLegacyPantry } from '../services/pantryService';
+import BudgetCard, { ProteinForMoney } from '../components/shopping/BudgetCard';
 import { api } from '../services/api';
 
 const ShoppingPage = ({ setCurrentPage }) => {
   const { isDark, toggleTheme } = useTheme();
   const [shoppingList, setShoppingList] = useState(null);
-  const [costEstimate, setCostEstimate] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // ── Pantry state ───────────────────────────────────────────────────────────
-  const [pantryItems, setPantryItems] = useState(() => loadPantry());
-  const [pantryModeActive, setPantryModeActive] = useState(false);
+  // Items fully covered by the pantry are hidden unless the user asks to see them.
+  const [hidePantry, setHidePantry] = useState(true);
   const [showPantryManager, setShowPantryManager] = useState(false);
 
-  useEffect(() => {
-    loadShoppingList();
-  }, []);
-
+  // Built on the server from the plan's weighed ingredients for the household, minus the
+  // pantry, rounded to packs and priced for the user's city tier and the month.
   const loadShoppingList = async () => {
-    setIsLoading(true);
     try {
-      // Built on the server from the plan's weighed ingredients, scaled to each
-      // portion and the household size, with approximate ₹ prices.
-      const list = await api.getShoppingList();
-      if (!list) { setIsLoading(false); return; }
+      const [list, savedProfile] = await Promise.all([api.getShoppingList(), api.getUserProfile()]);
       setShoppingList(list);
-      setCostEstimate(list.cost);
+      setProfile(savedProfile);
     } catch (error) {
       console.error('Error loading shopping list:', error);
     } finally {
@@ -36,36 +30,27 @@ const ShoppingPage = ({ setCurrentPage }) => {
     }
   };
 
-  // ── Filtered list: remove pantry items when pantry mode is ON ─────────────
-  const filteredShoppingList = useMemo(() => {
-    if (!shoppingList || !pantryModeActive || pantryItems.size === 0) return shoppingList;
-
-    const filteredByCategory = {};
-    let totalItems = 0;
-
-    Object.entries(shoppingList.byCategory).forEach(([cat, items]) => {
-      const remaining = items.filter(
-        item => !pantryItems.has(normalisePantryName(item.name))
-      );
-      filteredByCategory[cat] = remaining;
-      totalItems += remaining.length;
-    });
-
-    return {
-      byCategory: filteredByCategory,
-      allIngredients: Object.values(filteredByCategory).flat(),
-      totalItems,
-    };
-  }, [shoppingList, pantryItems, pantryModeActive]);
-
-  // How many items are being hidden by the pantry
-  const hiddenCount = shoppingList && filteredShoppingList
-    ? shoppingList.totalItems - filteredShoppingList.totalItems
-    : 0;
-
-  const handlePantryChange = useCallback((newSet) => {
-    setPantryItems(new Set(newSet));
+  useEffect(() => {
+    importLegacyPantry().finally(loadShoppingList);
   }, []);
+
+  const haveIt = async (item) => {
+    try {
+      await api.savePantryItem(item.foodId, { grams: null });
+      await loadShoppingList();
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const visibleList = useMemo(() => {
+    if (!shoppingList || !hidePantry) return shoppingList;
+    const byCategory = Object.fromEntries(Object.entries(shoppingList.byCategory).map(([cat, items]) => [cat, items.filter(i => i.status !== 'in_pantry')]));
+    const allIngredients = Object.values(byCategory).flat();
+    return { ...shoppingList, byCategory, allIngredients, totalItems: allIngredients.length };
+  }, [shoppingList, hidePantry]);
+
+  const pantryCount = shoppingList ? shoppingList.totalItems - shoppingList.toBuy : 0;
 
   // ── Loading / empty states ─────────────────────────────────────────────────
   if (isLoading) {
@@ -120,38 +105,17 @@ const ShoppingPage = ({ setCurrentPage }) => {
             </div>
 
             <div className="flex items-center space-x-3">
-              {/* ── Pantry Mode Toggle ── */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowPantryManager(true)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border
-                    ${isDark
-                      ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
-                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                    }`}
-                >
-                  <PackageCheck className="w-4 h-4 text-emerald-500" />
-                  <span className="hidden sm:inline">Pantry</span>
-                  {pantryItems.size > 0 && (
-                    <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center font-bold">
-                      {pantryItems.size}
-                    </span>
-                  )}
-                </button>
-
-                {/* Pantry mode on/off switch */}
-                {pantryItems.size > 0 && (
-                  <button
-                    onClick={() => setPantryModeActive(prev => !prev)}
-                    title={pantryModeActive ? 'Pantry mode ON — click to show all items' : 'Click to hide items you already have'}
-                    className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none
-                      ${pantryModeActive ? 'bg-emerald-500' : isDark ? 'bg-gray-700' : 'bg-gray-300'}`}
-                  >
-                    <span className={`inline-block w-4 h-4 bg-white rounded-full shadow transition-transform duration-200
-                      ${pantryModeActive ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => setShowPantryManager(true)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border
+                  ${isDark
+                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+              >
+                <PackageCheck className="w-4 h-4 text-emerald-500" />
+                <span className="hidden sm:inline">Pantry</span>
+              </button>
 
               <button
                 onClick={toggleTheme}
@@ -166,43 +130,37 @@ const ShoppingPage = ({ setCurrentPage }) => {
         </div>
       </nav>
 
-      {/* Pantry mode banner */}
-      {pantryModeActive && hiddenCount > 0 && (
-        <div className="bg-emerald-500/10 border-b border-emerald-500/20">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2">
-            <PackageCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">
-              <span className="font-semibold">{hiddenCount} items</span> hidden because you already have them in your pantry.
-            </p>
-            <button
-              onClick={() => setPantryModeActive(false)}
-              className="ml-auto text-xs text-emerald-600 hover:underline"
-            >
-              Show all
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ShoppingList
-          shoppingList={filteredShoppingList}
-          costEstimate={costEstimate}
+        <BudgetCard
+          key={`${profile?.weeklyBudget}-${profile?.priceTier}`}
+          budget={shoppingList.budget}
+          cost={shoppingList.cost}
+          priceTier={shoppingList.priceTier}
+          profile={profile}
+          onUpdated={loadShoppingList}
         />
+        <ProteinForMoney foods={shoppingList.proteinForMoney} />
+
+        {pantryCount > 0 && (
+          <div className="mb-4 flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <PackageCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+            <span>{pantryCount} item{pantryCount === 1 ? '' : 's'} already in your pantry {hidePantry ? 'are hidden' : 'are shown'}.</span>
+            <button onClick={() => setHidePantry(h => !h)} className="ml-auto text-xs text-emerald-600 hover:underline">
+              {hidePantry ? 'Show them' : 'Hide them'}
+            </button>
+          </div>
+        )}
+
+        <ShoppingList shoppingList={visibleList} costEstimate={shoppingList.cost} onHaveIt={haveIt} />
       </div>
 
       {/* Pantry Manager Modal */}
       {showPantryManager && (
-        <PantryManager
-          shoppingList={shoppingList}
-          pantryItems={pantryItems}
-          onPantryChange={handlePantryChange}
-          onClose={() => setShowPantryManager(false)}
-        />
+        <PantryManager onClose={() => setShowPantryManager(false)} onChanged={loadShoppingList} />
       )}
     </div>
   );
 };
 
-export default ShoppingPage;
+export default ShoppingPage;

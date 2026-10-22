@@ -132,7 +132,9 @@ describe('buildShoppingList', () => {
         const grams = (list, id) => list.allIngredients.find(i => i.foodId === id)?.grams;
         const someFood = one.allIngredients[0].foodId;
         expect(grams(four, someFood)).toBeCloseTo(grams(one, someFood) * 4, -1);
-        expect(four.cost.total).toBeGreaterThan(one.cost.total * 3.5);
+        // The food used scales with the household; whole packs bought do not.
+        expect(four.cost.used).toBeGreaterThan(one.cost.used * 3.5);
+        expect(one.cost.total).toBeGreaterThanOrEqual(one.cost.used);
         expect(one.cost.perPersonPerDay).toBeGreaterThan(0);
     });
 });

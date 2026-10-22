@@ -2,6 +2,7 @@
 // chooses which action to take; every portion, calorie budget and recipe comes from here.
 import { buildContext, dayTotals, generateWeekPlan, rebalanceDay, swapMeal, SLOTS, SLOT_SHARE } from './planner.js';
 import { nameScore, tokens } from './foodMatch.js';
+import { fitToBudget } from './budget.js';
 
 // An event meal may take up to this multiple of its usual share of the day...
 const EVENT_BOOST = 1.6;
@@ -124,7 +125,8 @@ export const planFreshDays = (days, profile, recipes, seed, locked = {}) => {
     const first = days[0].date;
     const last = days[days.length - 1].date;
     const span = Math.round((Date.parse(`${last}T00:00:00Z`) - Date.parse(`${first}T00:00:00Z`)) / 86400000) + 1;
-    const fresh = new Map(generateWeekPlan(profile, recipes, { startDate: first, days: span, seed }).map(d => [d.date, d]));
+    const { plan: generated } = fitToBudget(generateWeekPlan(profile, recipes, { startDate: first, days: span, seed }), profile, recipes);
+    const fresh = new Map(generated.map(d => [d.date, d]));
     return days.map(day => {
         const next = fresh.get(day.date);
         if (!next) return day;

@@ -4,8 +4,9 @@ import { prisma } from '../lib/prisma.js';
 import { authenticateToken, parseJson } from '../lib/auth.js';
 import { computeNutritionTargets } from '../../shared/targets.js';
 import { generateWeekPlan } from '../engine/planner.js';
+import { fitToBudget } from '../engine/budget.js';
 import { loadProfile } from './profile.js';
-import { loadRecipesForUser } from '../services/recipes.js';
+import { loadPricedRecipes } from '../services/prices.js';
 import { runCheckIn } from '../services/adaptiveCheckIn.js';
 
 const router = Router();
@@ -25,8 +26,9 @@ const regenerateRemainingDays = async (userId, profile, today) => {
     const planData = parseJson(row.planData, {});
     const remaining = (planData.plan || []).filter(d => d.date > today);
     if (!remaining.length) return false;
-    const recipes = await loadRecipesForUser(userId);
-    const fresh = generateWeekPlan(profile, recipes, { startDate: remaining[0].date, days: remaining.length, seed: Math.floor(Math.random() * 2 ** 31) });
+    const recipes = await loadPricedRecipes(userId, profile, remaining[0].date);
+    const generated = generateWeekPlan(profile, recipes, { startDate: remaining[0].date, days: remaining.length, seed: Math.floor(Math.random() * 2 ** 31) });
+    const { plan: fresh } = fitToBudget(generated, profile, recipes);
     const byDate = new Map(fresh.map(d => [d.date, d]));
     planData.plan = planData.plan.map(d => byDate.get(d.date) || d);
     planData.targets = profile.nutritionTargets;

@@ -1,282 +1,143 @@
-import React, { useState, useMemo } from 'react';
-import { X, Search, PackageCheck, Package, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import { readSynced, writeSynced } from '../../services/syncedStorage';
+import React, { useEffect, useState } from 'react';
+import { X, Search, Trash2, PackageCheck, Clock } from 'lucide-react';
+import { api } from '../../services/api';
+import { localDateString } from '../../utils/dates';
 
-/**
- * Load the current pantry item set. Items are normalised ingredient names
- * (lowercase, trimmed), cached in localStorage and synced to the server.
- * @returns {Set<string>}
- */
-export const loadPantry = () => new Set(readSynced('pantry', []) || []);
+const DAY_MS = 86400000;
+const daysUntil = (date) => Math.round((Date.parse(`${date}T00:00:00`) - Date.parse(`${localDateString()}T00:00:00`)) / DAY_MS);
 
-/**
- * Persist the pantry set.
- * @param {Set<string>} pantrySet
- */
-export const savePantry = (pantrySet) => {
-  writeSynced('pantry', [...pantrySet]);
-};
+const muted = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' };
 
-/**
- * Normalise an ingredient name for consistent pantry matching:
- * lowercase, collapse whitespace, strip leading/trailing spaces.
- * @param {string} name
- * @returns {string}
- */
-export const normalisePantryName = (name = '') =>
-  name.toLowerCase().replace(/\s+/g, ' ').trim();
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-const categoryIcons = {
-  vegetables: '🥬',
-  fruits: '🍎',
-  proteins: '🍗',
-  dairy: '🥛',
-  grains: '🌾',
-  spices: '🌶️',
-  oils: '🫒',
-  others: '📦',
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * PantryManager modal.
- *
- * Props:
- *  - shoppingList  : the full shopping list object (byCategory, totalItems, …)
- *  - pantryItems   : Set<string> of pantry ingredient keys
- *  - onPantryChange: (newSet: Set<string>) => void  – called after every toggle
- *  - onClose       : () => void
- */
-const PantryManager = ({ shoppingList, pantryItems, onPantryChange, onClose }) => {
-  const { isDark } = useTheme();
-  const [search, setSearch] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState({});
-
-  const toggleCategory = (cat) =>
-    setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
-
-  const toggleItem = (normName) => {
-    const next = new Set(pantryItems);
-    if (next.has(normName)) {
-      next.delete(normName);
-    } else {
-      next.add(normName);
-    }
-    savePantry(next);
-    onPantryChange(next);
-  };
-
-  const clearAll = () => {
-    const empty = new Set();
-    savePantry(empty);
-    onPantryChange(empty);
-  };
-
-  // Flatten all items for search
-  const allItems = useMemo(() => {
-    const flat = [];
-    Object.entries(shoppingList.byCategory).forEach(([cat, items]) => {
-      items.forEach(item => flat.push({ ...item, category: cat }));
-    });
-    return flat;
-  }, [shoppingList]);
-
-  const filteredItems = useMemo(() => {
-    if (!search.trim()) return null; // null means "use category view"
-    const q = search.toLowerCase();
-    return allItems.filter(item =>
-      item.name.includes(q) || (item.display || '').toLowerCase().includes(q)
-    );
-  }, [search, allItems]);
-
-  const pantryCount = pantryItems.size;
-
-  // ── Render ────────────────────────────────────────────────────────────────
+const ExpiryBadge = ({ expiresOn }) => {
+  if (!expiresOn) return null;
+  const days = daysUntil(expiresOn);
+  const text = days < 0 ? 'Expired' : days === 0 ? 'Use today' : days <= 4 ? `Use within ${days} day${days === 1 ? '' : 's'}` : null;
+  if (!text) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <span className="badge badge--accent" style={{ color: days < 0 ? 'var(--color-error)' : 'var(--color-warning)' }}>
+      <Clock size={11} />{text}
+    </span>
+  );
+};
 
-      {/* Panel */}
-      <div className={`relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden
-        ${isDark ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+/**
+ * What's at home: quantity (empty = "have enough") and expiry date. The shopping list
+ * subtracts it, and new plans use items that expire soon first.
+ */
+const PantryManager = ({ onClose, onChanged }) => {
+  const [items, setItems] = useState([]);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [error, setError] = useState('');
 
-        {/* ── Header ── */}
-        <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div>
-            <h2 className={`text-xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              <PackageCheck className="w-5 h-5 text-emerald-500" />
-              My Pantry
-            </h2>
-            <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              Mark what you already have — they'll be removed from your shopping list
-            </p>
-          </div>
-          <button onClick={onClose} className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
-            <X className="w-5 h-5" />
-          </button>
+  const load = () => api.getPantry().then(setItems).catch(err => setError(err.message));
+
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (query.trim().length < 2) return undefined;
+    const timer = setTimeout(() => api.searchPantryFoods(query.trim()).then(setResults).catch(() => setResults([])), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const shown = query.trim().length < 2 ? [] : results;
+
+  const save = async (foodId, values) => {
+    setError('');
+    try {
+      const saved = await api.savePantryItem(foodId, values);
+      setItems(current => (current.some(i => i.foodId === foodId) ? current.map(i => (i.foodId === foodId ? saved : i)) : [saved, ...current]));
+      onChanged?.();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const remove = async (foodId) => {
+    try {
+      await api.deletePantryItem(foodId);
+      setItems(current => current.filter(i => i.foodId !== foodId));
+      onChanged?.();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const add = (food) => {
+    setQuery('');
+    setResults([]);
+    if (!items.some(i => i.foodId === food.foodId)) save(food.foodId, { grams: null, expiresOn: null });
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'oklch(10% 0.02 152 / 0.55)', backdropFilter: 'blur(4px)' }} />
+      <div role="dialog" aria-modal="true" aria-label="Pantry" style={{ position: 'relative', width: '100%', maxWidth: '38rem', maxHeight: '90vh', overflowY: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.25rem' }}>
+          <PackageCheck style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-brand)' }} />
+          <h2 style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-xl)', letterSpacing: '-0.03em', color: 'var(--color-text-primary)', margin: 0 }}>Pantry</h2>
+          <button onClick={onClose} className="btn btn--ghost btn--sm" aria-label="Close"><X size={18} /></button>
         </div>
+        <p style={{ ...muted, fontSize: 'var(--text-sm)', margin: '0 0 1rem' }}>
+          What you already have. Leave the amount empty if you have plenty. Add an expiry date and your next plan uses it first.
+        </p>
 
-        {/* ── Toolbar ── */}
-        <div className={`px-6 py-3 flex items-center gap-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search ingredients…"
-              className={`w-full pl-9 pr-4 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
-                ${isDark ? 'bg-gray-800 text-white placeholder-gray-500 border border-gray-700' : 'bg-gray-50 text-gray-900 placeholder-gray-400 border border-gray-200'}`}
-            />
-          </div>
-
-          {/* Pantry count badge */}
-          {pantryCount > 0 && (
-            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 text-sm font-semibold whitespace-nowrap">
-              {pantryCount} in pantry
-            </span>
-          )}
-
-          {/* Clear all */}
-          {pantryCount > 0 && (
-            <button
-              onClick={clearAll}
-              className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-gray-800 text-red-400' : 'hover:bg-red-50 text-red-500'}`}
-              title="Clear all pantry items"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+        <div style={{ position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', width: '1rem', height: '1rem', color: 'var(--color-text-muted)' }} />
+          <input className="field" style={{ paddingLeft: '2.25rem' }} placeholder="Add an item, e.g. atta, paneer, spinach" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search foods to add" />
         </div>
+        {shown.length > 0 && (
+          <div style={{ marginTop: '0.375rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+            {shown.map(food => (
+              <button key={food.foodId} onClick={() => add(food)} style={{ display: 'block', width: '100%', padding: '0.5rem 0.75rem', background: 'var(--color-surface)', border: 'none', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>
+                {food.name}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* ── Content ── */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-          {filteredItems !== null ? (
-            // ── Search results view ──────────────────────────────────────
-            filteredItems.length === 0 ? (
-              <p className={`text-center py-10 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No ingredients match your search.</p>
-            ) : (
-              filteredItems.map(item => (
-                <PantryItem
-                  key={`${item.name}_${item.unit}`}
-                  item={item}
-                  inPantry={pantryItems.has(normalisePantryName(item.name))}
-                  onToggle={() => toggleItem(normalisePantryName(item.name))}
-                  isDark={isDark}
+        {error && <div role="alert" style={{ marginTop: '0.75rem', color: 'var(--color-error)', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)' }}>{error}</div>}
+
+        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column' }}>
+          {items.length === 0 && <p style={{ ...muted, fontSize: 'var(--text-sm)' }}>Your pantry is empty. Add what you have, or tick “Have it” on the shopping list.</p>}
+          {items.map(item => (
+            <div key={item.foodId} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 0', borderTop: '1px solid var(--color-border)', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 10rem', minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>{item.name}</div>
+                <ExpiryBadge expiresOn={item.expiresOn} />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <input
+                  type="number"
+                  min="1"
+                  className="field"
+                  defaultValue={item.grams ?? ''}
+                  placeholder="plenty"
+                  onBlur={e => {
+                    const grams = e.target.value === '' ? null : Number(e.target.value);
+                    if (grams !== item.grams) save(item.foodId, { grams, expiresOn: item.expiresOn });
+                  }}
+                  style={{ width: '6rem', padding: '0.35rem 0.5rem' }}
+                  aria-label={`${item.name} amount in grams`}
                 />
-              ))
-            )
-          ) : (
-            // ── Category accordion view ──────────────────────────────────
-            Object.entries(shoppingList.byCategory).map(([cat, items]) => {
-              if (items.length === 0) return null;
-              const isExpanded = expandedCategories[cat] !== false; // default open
-              const countInPantry = items.filter(i => pantryItems.has(normalisePantryName(i.name))).length;
-
-              return (
-                <div key={cat} className={`rounded-xl overflow-hidden border ${isDark ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-white shadow-sm'}`}>
-                  {/* Category header */}
-                  <button
-                    onClick={() => toggleCategory(cat)}
-                    className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{categoryIcons[cat]}</span>
-                      <span className={`font-semibold capitalize ${isDark ? 'text-white' : 'text-gray-900'}`}>{cat}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
-                        {items.length}
-                      </span>
-                      {countInPantry > 0 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-medium">
-                          {countInPantry} in pantry
-                        </span>
-                      )}
-                    </div>
-                    {isExpanded
-                      ? <ChevronUp className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-                      : <ChevronDown className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />}
-                  </button>
-
-                  {/* Items */}
-                  {isExpanded && (
-                    <div className={`border-t px-2 py-1 space-y-0.5 ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-                      {items.map(item => (
-                        <PantryItem
-                          key={`${item.name}_${item.unit}`}
-                          item={item}
-                          inPantry={pantryItems.has(normalisePantryName(item.name))}
-                          onToggle={() => toggleItem(normalisePantryName(item.name))}
-                          isDark={isDark}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* ── Footer ── */}
-        <div className={`px-6 py-4 border-t ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'}`}>
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
-          >
-            Done — apply to shopping list
-          </button>
+                <span style={muted}>g</span>
+              </label>
+              <input
+                type="date"
+                className="field"
+                value={item.expiresOn || ''}
+                onChange={e => save(item.foodId, { grams: item.grams, expiresOn: e.target.value || null })}
+                style={{ width: 'auto', padding: '0.35rem 0.5rem' }}
+                aria-label={`${item.name} expiry date`}
+              />
+              <button onClick={() => remove(item.foodId)} className="btn btn--ghost btn--sm" style={{ padding: '0.3rem' }} aria-label={`Remove ${item.name}`}>
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-component: single ingredient row
-// ─────────────────────────────────────────────────────────────────────────────
-const PantryItem = ({ item, inPantry, onToggle, isDark }) => (
-  <div
-    onClick={onToggle}
-    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer select-none transition-all
-      ${inPantry
-        ? isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'
-        : isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-      }`}
-  >
-    {/* Toggle icon */}
-    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
-      ${inPantry ? 'bg-emerald-500' : isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-      {inPantry
-        ? <PackageCheck className="w-4 h-4 text-white" />
-        : <Package className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-      }
-    </div>
-
-    {/* Name */}
-    <span className={`flex-1 text-sm font-medium capitalize
-      ${inPantry
-        ? isDark ? 'text-emerald-400 line-through' : 'text-emerald-700 line-through'
-        : isDark ? 'text-gray-200' : 'text-gray-800'
-      }`}>
-      {item.name}
-    </span>
-
-    {/* "Have it" label */}
-    {inPantry && (
-      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
-        In pantry
-      </span>
-    )}
-  </div>
-);
 
 export default PantryManager;

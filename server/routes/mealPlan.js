@@ -2,10 +2,12 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { authenticateToken, parseJson } from '../lib/auth.js';
 import { loadProfile } from './profile.js';
-import { loadRecipesForUser } from '../services/recipes.js';
-import { generateWeekPlan, rankAlternatives, swapMeal, PLANNER_VERSION, SLOTS } from '../engine/planner.js';
+import { loadPricedRecipes, loadPantry, pricesFor, useUpMap } from '../services/prices.js';
+import { rankAlternatives, swapMeal, PLANNER_VERSION, SLOTS } from '../engine/planner.js';
 import { rejectionReason } from '../engine/constraints.js';
-import { buildShoppingList } from '../engine/shopping.js';
+import { buildShoppingList, shoppingListText } from '../engine/shopping.js';
+import { budgetSummary, planWeek } from '../engine/budget.js';
+import { proteinForMoney } from '../engine/cost.js';
 
 const router = Router();
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -46,10 +48,14 @@ router.post('/generate', authenticateToken, async (req, res) => {
         const startDate = ISO_DATE.test(req.body?.startDate) ? req.body.startDate : new Date().toISOString().slice(0, 10);
         const seed = Number.isFinite(Number(req.body?.seed)) ? Number(req.body.seed) : Math.floor(Math.random() * 2 ** 31);
 
-        const recipes = await loadRecipesForUser(req.user.id);
-        const plan = generateWeekPlan(profile, recipes, { startDate, seed });
+        // Costs use the user's city tier and the month; pantry items about to expire are used first.
+        const [recipes, pantry] = await Promise.all([loadPricedRecipes(req.user.id, profile, startDate), loadPantry(req.user.id)]);
+        const useUp = useUpMap(pantry, startDate);
+        const { plan, swaps } = planWeek(profile, recipes, { startDate, seed, useUp });
         const planData = {
             plan,
+            budget: { ...budgetSummary(plan, profile), swaps },
+            usedUp: [...useUp.keys()],
             createdAt: new Date().toISOString(),
             planVersion: PLANNER_VERSION,
             startDate,
@@ -86,7 +92,7 @@ router.get('/alternatives', authenticateToken, async (req, res) => {
         const planData = row ? parseJson(row.planData, {}) : {};
         const index = findDay(planData, date);
         const current = index >= 0 ? planData.plan[index][slot] : null;
-        const recipes = await loadRecipesForUser(req.user.id);
+        const recipes = await loadPricedRecipes(req.user.id, profile, date);
         res.json(rankAlternatives(profile, recipes, slot, current));
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -107,7 +113,7 @@ router.post('/swap', authenticateToken, async (req, res) => {
         const index = findDay(planData, date);
         if (index < 0) return res.status(404).json({ message: 'That date is not in the current plan.' });
 
-        const recipes = await loadRecipesForUser(req.user.id);
+        const recipes = await loadPricedRecipes(req.user.id, profile, date);
         const recipe = recipes.find(r => r.id === recipeId);
         if (!recipe || recipe.course === 'staple' || !recipe.meals.includes(slot)) {
             return res.status(400).json({ message: 'That recipe cannot be used for this meal.' });
@@ -132,7 +138,16 @@ router.get('/shopping-list', authenticateToken, async (req, res) => {
         const planData = parseJson(row.planData, {});
         const profile = (await loadProfile(req.user.id)) || {};
         const cookFor = Math.max(1, parseInt(profile.servings ?? planData.servings, 10) || 1);
-        res.json(buildShoppingList(planData.plan || [], cookFor));
+        const plan = planData.plan || [];
+        const [prices, pantry] = await Promise.all([pricesFor(profile, plan[0]?.date), loadPantry(req.user.id)]);
+        const list = buildShoppingList(plan, cookFor, { prices, pantry });
+        res.json({
+            ...list,
+            budget: budgetSummary(plan, profile),
+            priceTier: profile.priceTier || 'metro',
+            proteinForMoney: proteinForMoney(prices, profile),
+            shareText: shoppingListText(list),
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

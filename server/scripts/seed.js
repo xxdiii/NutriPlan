@@ -7,6 +7,7 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { FOOD_TABLE, analyseRecipe, allowedDietCategories } from '../engine/nutrition.js';
 import { RECIPES } from '../data/recipes/index.js';
+import { buildPriceRows } from '../engine/cost.js';
 
 const prisma = new PrismaClient();
 
@@ -74,6 +75,15 @@ const seedRecipes = async () => {
     return { count: RECIPES.length, removed: removed.count };
 };
 
+const seedPrices = async () => {
+    const rows = buildPriceRows();
+    for (const row of rows) {
+        const { foodId, tier, ...data } = row;
+        await prisma.ingredientPrice.upsert({ where: { foodId_tier: { foodId, tier } }, create: row, update: data });
+    }
+    return rows.length;
+};
+
 const printCoverage = async () => {
     const recipes = await prisma.recipe.findMany({ where: { source: 'curated' }, select: { meals: true, dietCategory: true } });
     for (const diet of ['vegan', 'vegetarian', 'eggetarian', 'pescatarian', 'non_veg']) {
@@ -86,7 +96,8 @@ const printCoverage = async () => {
 try {
     const foods = await seedFoods();
     const { count, removed } = await seedRecipes();
-    console.log(`Seeded ${foods} foods and ${count} curated recipes (${removed} stale recipes removed).`);
+    const prices = await seedPrices();
+    console.log(`Seeded ${foods} foods, ${count} curated recipes (${removed} stale recipes removed) and ${prices} prices.`);
     console.log('Recipes available per meal slot:');
     await printCoverage();
 } finally {

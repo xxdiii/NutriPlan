@@ -32,6 +32,7 @@ model User {
   aiUsage         AiUsage[]
   checkIns        CheckIn[]
   coachMessages   CoachMessage[]
+  pantryItems     PantryItem[]
 }
 
 model MealPlan {
@@ -251,4 +252,30 @@ model CoachMessage {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// Retail prices per food and city tier (F5). Seeded from data/prices.js: government
+// (DoCA) averages where published, estimates otherwise; `source` says which.
+model IngredientPrice {
+  id       Int     @id @default(autoincrement())
+  foodId   String
+  tier     String  // metro | tier2
+  priceInr Float   // ₹ per kg (per litre for liquids)
+  source   String
+  asOf     String? // YYYY-MM-DD of the source data
+
+  @@unique([foodId, tier])
+}
+
+// What the user already has at home (F5). grams null means "have enough".
+model PantryItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodId    String
+  grams     Float?
+  expiresOn String?  // YYYY-MM-DD
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, foodId])
 }

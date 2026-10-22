@@ -110,6 +110,13 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
               {meal.difficulty}
             </span>
           </div>
+          {!meal.eatingOut && meal.costInr > 0 && (
+            <div className="flex items-center space-x-1" title="Cost per person at your prices">
+              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                ₹{Math.round(meal.costInr)}{meal.protein >= 2 ? ` · ₹${((meal.costInr / meal.protein) * 10).toFixed(1)} per 10 g protein` : ''}
+              </span>
+            </div>
+          )}
           {meal.servings > 1 && (
             <div className="flex items-center space-x-1" title="Ingredient quantities are for the whole household; nutrition is per person">
               <Users className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />

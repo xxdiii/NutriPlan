@@ -266,6 +266,14 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
             </span>
             <span className={`text-xs uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Fat</span>
           </div>
+          {currentDayPlan?.totalCost > 0 && (
+            <div className="text-center px-4" title="Planned food cost per person for this day, at your prices">
+              <span className={`block text-2xl font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                ₹{Math.round(currentDayPlan.totalCost)}
+              </span>
+              <span className={`text-xs uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Day&apos;s food</span>
+            </div>
+          )}
         </div>
 
         {/* Compliance */}

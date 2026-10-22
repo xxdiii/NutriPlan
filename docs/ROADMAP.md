@@ -215,6 +215,8 @@ Competitor cells are based on public information and reviews; check them before 
 
 #### F5 ₹ budget-optimised planning and smart grocery
 
+> **Status: built** (see [F5_PLAN.md](F5_PLAN.md)). DoCA's city-wise reports are behind a captcha and data.gov.in refused automated access, so DoCA all-India averages are used for tier-2 and metro adds an estimated 10%. Seasonality uses one national calendar. The budget compares the food the plan uses; the shop total (whole packs) is shown separately with the staples share.
+
 **Prices:**
 - An `IngredientPrice` table (₹/kg) with metro and tier-2 values.
 - Seed it from public retail-price data, such as the Dept. of Consumer Affairs daily prices for essential items (check what's available), and fill gaps by hand.

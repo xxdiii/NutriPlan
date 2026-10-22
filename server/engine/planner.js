@@ -29,6 +29,18 @@ const BHAKRI_STATES = ['Maharashtra', 'Karnataka', 'Gujarat', 'Rajasthan'];
 // Rough food spend per person per day for each onboarding budget level (₹).
 export const DAILY_BUDGET = { low: 100, medium: 200, high: 400 };
 
+/** ₹ per person per day: the user's weekly household budget if set, else their budget level. */
+export const budgetPerPersonPerDay = (profile) => {
+    const weekly = parseFloat(profile.weeklyBudget);
+    const people = Math.max(1, parseInt(profile.servings, 10) || 1);
+    if (weekly > 0) return weekly / 7 / people;
+    return DAILY_BUDGET[profile.budget] || DAILY_BUDGET.medium;
+};
+
+// Score bonus for a recipe using a pantry item that expires before (or on) the plan day.
+const USE_UP_BONUS = 0.5;
+const USE_UP_MAX = 1;
+
 const GLYCAEMIC_CONDITIONS = ['diabetes_t1', 'diabetes_t2', 'pcos'];
 const SAFE_FLAGS = ['noOnionGarlic', 'jainSafe', 'sattvic', 'vratSafe', 'glutenFree'];
 const MAIN_SCALES = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -243,8 +255,11 @@ export const buildMeal = (components, profile, extra = {}) => {
 
 // ── Context and scoring ───────────────────────────────────────────────────────
 
-/** Everything the planner needs about a user, computed once per plan. */
-export const buildContext = (profile, recipes, { seed = Date.now() } = {}) => {
+/**
+ * Everything the planner needs about a user, computed once per plan.
+ * @param useUp  Map foodId -> plan-day index by which a pantry item should be used
+ */
+export const buildContext = (profile, recipes, { seed = Date.now(), useUp = null } = {}) => {
     const targets = profile.nutritionTargets || {};
     const targetKcal = targets.targetCalories || 2000;
     const targetProtein = targets.macros?.protein || Math.round(targetKcal * 0.15 / 4);
@@ -261,7 +276,8 @@ export const buildContext = (profile, recipes, { seed = Date.now() } = {}) => {
         staples: allowed.filter(r => r.course === 'staple'),
         cuisines: new Set([...(profile.cuisines || []), ...(STATE_CUISINES[region] || [])]),
         region,
-        budgetPerDay: DAILY_BUDGET[profile.budget] || DAILY_BUDGET.medium,
+        budgetPerDay: budgetPerPersonPerDay(profile),
+        useUp: useUp?.size ? useUp : null,
         glycaemic: GLYCAEMIC_CONDITIONS.some(c => conditions.includes(c)),
         hypertension: conditions.includes('hypertension'),
         anaemia: conditions.includes('anemia'),
@@ -269,7 +285,7 @@ export const buildContext = (profile, recipes, { seed = Date.now() } = {}) => {
     };
 };
 
-const slotCandidates = (ctx, slot) => ctx.allowed.filter(r => r.course !== 'staple' && r.meals.includes(slot));
+export const slotCandidates = (ctx, slot) => ctx.allowed.filter(r => r.course !== 'staple' && r.meals.includes(slot));
 
 const per100 = (recipe, value) => (value / Math.max(recipe.nutrition.kcal, 1)) * 100;
 
@@ -311,6 +327,16 @@ const scoreRecipe = (ctx, recipe, slot, state, { jitter = true } = {}) => {
     if (lastUsed !== undefined) score += state.day - lastUsed <= 2 ? 3 : 1;
     if (state.todayIds.has(recipe.id)) score += 3;
     if (state.todayCuisines.has(recipe.cuisine)) score += 0.3;
+
+    // Use it up first: favour recipes that use pantry items before they expire.
+    if (ctx.useUp) {
+        let bonus = 0;
+        for (const { foodId } of recipe.ingredients) {
+            const lastDay = ctx.useUp.get(foodId);
+            if (lastDay !== undefined && state.day <= lastDay) bonus += USE_UP_BONUS;
+        }
+        score -= Math.min(USE_UP_MAX, bonus);
+    }
 
     if (jitter) score += ctx.rng() * 0.8;
     return score;
@@ -438,10 +464,11 @@ const pickRecipe = (ctx, slot, state) => {
 /**
  * @param profile   saved profile including nutritionTargets
  * @param recipes   engine-shaped recipes (see services/recipes.js)
- * @param options   startDate 'YYYY-MM-DD' (the user's local today), days, seed
+ * @param options   startDate 'YYYY-MM-DD' (the user's local today), days, seed,
+ *                  useUp (Map foodId -> last plan-day index to use a pantry item by)
  */
-export const generateWeekPlan = (profile, recipes, { startDate, days = 7, seed = Date.now() } = {}) => {
-    const ctx = buildContext(profile, recipes, { seed });
+export const generateWeekPlan = (profile, recipes, { startDate, days = 7, seed = Date.now(), useUp = null } = {}) => {
+    const ctx = buildContext(profile, recipes, { seed, useUp });
     const recipesById = new Map(recipes.map(r => [r.id, r]));
     const start = startDate || new Date().toISOString().slice(0, 10);
     const batchCooking = ['batch_3', 'batch_7'].includes(profile.mealPrepPreference);
