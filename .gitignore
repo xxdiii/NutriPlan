@@ -27,3 +27,12 @@ yarn-error.log*
 
 # Environment variables
 .env
+# Local SQLite database (recreated by `npx prisma migrate dev`)
+server/prisma/*.db
+server/prisma/*.db-journal
+
+# AI coding-assistant config and local notes
+.agents/
+.impeccable.md
+skills-lock.json
+version_check.txt
