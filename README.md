@@ -37,8 +37,8 @@ Follow these instructions to set up the project locally.
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/smart-diet-app.git
-cd smart-diet-app
+git clone https://github.com/xxdiii/NutriPlan.git
+cd NutriPlan
 ```
 
 ### 2. Backend Setup
