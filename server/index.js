@@ -98,6 +98,21 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// --- Captcha replay protection ---
+// Each captcha token may be used for a single login attempt.
+// Maps token -> expiry (ms); entries are pruned once the token would have expired anyway.
+const usedCaptchaTokens = new Map();
+
+const consumeCaptchaToken = (token, expSeconds) => {
+    const now = Date.now();
+    for (const [t, exp] of usedCaptchaTokens) {
+        if (exp <= now) usedCaptchaTokens.delete(t);
+    }
+    if (usedCaptchaTokens.has(token)) return false;
+    usedCaptchaTokens.set(token, expSeconds * 1000);
+    return true;
+};
+
 // --- Routes ---
 
 // 1. Auth
@@ -321,13 +336,17 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Verify captcha
+        let decoded;
         try {
-            const decoded = jwt.verify(captchaToken, JWT_SECRET);
-            if (decoded.text !== captchaText.toLowerCase()) {
-                return res.status(400).json({ message: 'Invalid captcha.' });
-            }
+            decoded = jwt.verify(captchaToken, JWT_SECRET);
         } catch (err) {
             return res.status(400).json({ message: 'Captcha expired or invalid. Please refresh.' });
+        }
+        if (!consumeCaptchaToken(captchaToken, decoded.exp)) {
+            return res.status(400).json({ message: 'Captcha already used. Please refresh.' });
+        }
+        if (decoded.text !== captchaText.toLowerCase()) {
+            return res.status(400).json({ message: 'Invalid captcha.' });
         }
 
         // Find user
@@ -337,6 +356,26 @@ app.post('/api/auth/login', async (req, res) => {
         // Check password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(400).json({ message: 'Invalid password' });
+
+        // Block unverified accounts: resend a fresh OTP and send them to verification
+        if (!user.isVerified) {
+            const otp = generateOTP();
+            const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+            await prisma.user.update({
+                where: { email },
+                data: { verificationToken: `${otp}:${expiry}` }
+            });
+            try {
+                await sendVerificationEmail(email, user.name, otp);
+            } catch (mailError) {
+                console.error('Login: failed to resend verification email:', mailError);
+            }
+            return res.status(403).json({
+                requiresVerification: true,
+                email,
+                message: 'Please verify your email address. A new verification code has been sent.'
+            });
+        }
 
         // Generate Token
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET);

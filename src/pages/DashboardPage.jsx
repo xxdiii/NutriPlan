@@ -19,7 +19,6 @@ const DashboardPage = ({ setCurrentPage }) => {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [weeklyCompliance, setWeeklyCompliance] = useState(null);
   const [mealBreakdown, setMealBreakdown] = useState({ breakfast: 0, lunch: 0, snack: 0, dinner: 0 });
   const [consumedStats, setConsumedStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [complianceUpdateTrigger, setComplianceUpdateTrigger] = useState(0);
@@ -94,14 +93,8 @@ const DashboardPage = ({ setCurrentPage }) => {
 
         // 3. Load Compliance
         // Note: complianceService still uses localStorage. Ideally refactor that too.
-        // For dashboard display, we can iterate complianceService logic or migrate it wholly.
-        // To keep it simple, we let complianceService read from localStorage which is OK for now
-        // IF we are syncing data. But we aren't syncing compliance back to LS yet.
-        // So 'getWeeklyCompliance' will fail if data is only in backend.
-        // TODO: Fully migrate compliance service.
-
-        const weekly = getWeeklyCompliance ? null : null; // streak widget handles its own state
-        setWeeklyCompliance(weekly);
+        // TODO: Fully migrate compliance service to the backend.
+        // The weekly streak is handled by StreakWidget's own state.
         setMealBreakdown(getWeeklyMealBreakdown());
       } catch (error) {
         console.error('Error loading dashboard data:', error);

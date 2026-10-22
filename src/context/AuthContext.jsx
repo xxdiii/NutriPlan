@@ -77,9 +77,17 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('currentAppPage');
+        // Clear session data and any cached per-user data that isn't keyed by user id,
+        // so the next person to log in on this browser doesn't see it.
+        // (mealCompliance_<id> is user-scoped and local-only, so it is kept.)
+        [
+            'token', 'user', 'currentAppPage', 'returnPage',
+            'userProfile', 'weeklyMealPlan', 'weightLogs', 'activePlanId',
+            'shopping_checked_items', 'nutriplan_streak_meta',
+        ].forEach(key => localStorage.removeItem(key));
+        Object.keys(localStorage)
+            .filter(key => key.startsWith('hydration_'))
+            .forEach(key => localStorage.removeItem(key));
         setUser(null);
         window.location.href = '/';
     };

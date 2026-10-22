@@ -203,26 +203,26 @@ const generateDayPlan = (userProfile, preFilteredRecipes, usedRecipesState, dayN
   const snack     = findBestRecipe(preFilteredRecipes.snack,     calTarget('snack'),     protTarget('snack'),     usedRecipesState.snack,     allowRepeat, cuisineState);
   if (cuisineState && snack) recordCuisineUsed(cuisineState, snack.cuisine);
 
-  // ── Protein-aware portion scaling ─────────────────────────────────
-  // Scale to whichever is higher: calorie need or protein need.
-  // This ensures both targets are reached (protein wins when the recipe
-  // is protein-sparse; calories win when the recipe is calorie-dense).
-  const calculatePortion = (recipe, cTarget, pTarget) => {
+  // Calories may exceed the daily target by at most this much when chasing protein
+  const CALORIE_TOLERANCE = 1.05;
+
+  // ── Calorie-first portion scaling ─────────────────────────────────
+  // Scale each meal to its calorie target. Protein is handled by recipe
+  // selection (protein-first scoring) and the day-level boost below, which
+  // is capped by CALORIE_TOLERANCE. Scaling portions up to chase protein
+  // would triple protein-sparse (e.g. vegetarian) recipes and push the day
+  // far above the calorie target.
+  const calculatePortion = (recipe, cTarget) => {
     if (!recipe || !recipe.calories) return 1;
 
-    const calScale  = cTarget / recipe.calories;
-    const protScale = recipe.protein > 0 ? pTarget / recipe.protein : calScale;
-
-    // Use the higher scale so both cal & protein targets are met.
-    // But cap generously so the serving stays realistic.
-    const raw = Math.max(calScale, protScale);
-    const rounded = Math.round(raw * 2) / 2;   // nearest 0.5
+    const calScale = cTarget / recipe.calories;
+    const rounded = Math.round(calScale * 4) / 4;   // nearest 0.25
     return Math.max(0.5, Math.min(rounded, 3.5));
   };
 
-  const scaleRecipe = (recipe, cTarget, pTarget) => {
+  const scaleRecipe = (recipe, cTarget) => {
     if (!recipe) return null;
-    const portionMultiplier = calculatePortion(recipe, cTarget, pTarget);
+    const portionMultiplier = calculatePortion(recipe, cTarget);
     const finalScale = servings * portionMultiplier;
     return {
       ...recipe,
@@ -235,21 +235,32 @@ const generateDayPlan = (userProfile, preFilteredRecipes, usedRecipesState, dayN
     };
   };
 
-  let scaledBreakfast = scaleRecipe(breakfast, calTarget('breakfast'), protTarget('breakfast'));
-  let scaledLunch     = scaleRecipe(lunch,     calTarget('lunch'),     protTarget('lunch'));
-  let scaledSnack     = scaleRecipe(snack,     calTarget('snack'),     protTarget('snack'));
-  let scaledDinner    = scaleRecipe(dinner,    calTarget('dinner'),    protTarget('dinner'));
+  let scaledBreakfast = scaleRecipe(breakfast, calTarget('breakfast'));
+  let scaledLunch     = scaleRecipe(lunch,     calTarget('lunch'));
+  let scaledSnack     = scaleRecipe(snack,     calTarget('snack'));
+  let scaledDinner    = scaleRecipe(dinner,    calTarget('dinner'));
 
   // ── Post-day protein validation ────────────────────────────────────
-  // If total protein is still < 90% of target after scaling,
-  // boost the most protein-dense meal by up to 1.5× (capped at 3.5 total scale).
+  // If total protein is still < 90% of target after scaling, boost the most
+  // protein-dense meal by up to 1.5× (capped at 3.5 total scale), using only
+  // the calorie headroom left under the tolerance.
+  // Meal totals include `servings`, so compare against the scaled targets.
+  const dayCalorieTarget = targetCalories * servings;
+  const dayProteinTarget = targetProtein * servings;
+
   const totalProt = () =>
     (scaledBreakfast?.protein || 0) +
     (scaledLunch?.protein     || 0) +
     (scaledSnack?.protein     || 0) +
     (scaledDinner?.protein    || 0);
 
-  if (totalProt() < targetProtein * 0.9) {
+  const totalCals = () =>
+    (scaledBreakfast?.calories || 0) +
+    (scaledLunch?.calories     || 0) +
+    (scaledSnack?.calories     || 0) +
+    (scaledDinner?.calories    || 0);
+
+  if (totalProt() < dayProteinTarget * 0.9) {
     // Find the meal slot with the highest protein density (protein/calorie)
     const slots = [
       { key: 'lunch',     scaled: scaledLunch,     raw: lunch,     cTarget: calTarget('lunch')  },
@@ -264,11 +275,14 @@ const generateDayPlan = (userProfile, preFilteredRecipes, usedRecipesState, dayN
       return densB - densA; // highest protein density first
     });
 
-    if (slots.length > 0) {
-      const shortfall = targetProtein - totalProt();
+    const calorieHeadroom = dayCalorieTarget * CALORIE_TOLERANCE - totalCals();
+
+    if (slots.length > 0 && calorieHeadroom > 0) {
+      const shortfall = dayProteinTarget - totalProt();
       const best = slots[0];
       const addScale = Math.min(
         shortfall / (best.raw.protein || 1),
+        calorieHeadroom / (best.raw.calories || 1),
         1.5 // cap additional boost
       );
       const boostedScale = Math.min(
