@@ -6,8 +6,8 @@
  *
  * A "streak day" = at least one meal marked as 'eaten' on that calendar day.
  */
-import { getStorageKey as getComplianceKey } from './complianceService';
-import { readSynced, writeSynced } from './syncedStorage';
+
+const STREAK_META_KEY = 'nutriplan_streak_meta';
 
 // ── Milestone badge definitions ───────────────────────────────────────────────
 export const STREAK_MILESTONES = [
@@ -30,6 +30,21 @@ const toDateKey = (d) => {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+};
+
+/**
+ * Reads the user-scoped compliance storage key, matching complianceService.js.
+ */
+const getComplianceKey = () => {
+  try {
+    const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (profile.id) return `mealCompliance_${profile.id}`;
+    const auth = JSON.parse(localStorage.getItem('user') || '{}');
+    if (auth.id) return `mealCompliance_${auth.id}`;
+    return 'mealCompliance_guest';
+  } catch {
+    return 'mealCompliance_guest';
+  }
 };
 
 /**
@@ -134,10 +149,10 @@ export const getStreakData = () => {
 
   // Persist longest streak so it survives resets
   try {
-    const meta = readSynced('streakMeta', {}) || {};
+    const meta = JSON.parse(localStorage.getItem(STREAK_META_KEY) || '{}');
     const savedLongest = meta.longestStreak || 0;
     const trueLongest = Math.max(longestStreak, savedLongest);
-    writeSynced('streakMeta', { longestStreak: trueLongest });
+    localStorage.setItem(STREAK_META_KEY, JSON.stringify({ longestStreak: trueLongest }));
     return { currentStreak, longestStreak: trueLongest, earnedMilestones, nextMilestone };
   } catch {
     return { currentStreak, longestStreak, earnedMilestones, nextMilestone };

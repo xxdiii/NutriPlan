@@ -1,17 +1,25 @@
-// Compliance tracking service for meal plan adherence.
-// Reads come from the localStorage cache (loaded from the server at login);
-// every change is also saved to the server.
-import { api } from './api';
-import { complianceKey } from './syncedStorage';
+// Compliance tracking service for meal plan adherence
 
 /**
  * Helper to get user-specific storage key
  */
-export const getStorageKey = () => {
+const getStorageKey = () => {
   try {
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (userProfile.id) {
+      return `mealCompliance_${userProfile.id}`;
+    }
+
+    // Fallback: Check 'user' key from AuthContext
     const authUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return authUser.id ? complianceKey(authUser.id) : 'mealCompliance_guest';
-  } catch {
+    if (authUser.id) {
+      return `mealCompliance_${authUser.id}`;
+    }
+
+    // Fallback for legacy or guest
+    // NEW: Use a guest key that doesn't share history with the dev/legacy data
+    return 'mealCompliance_guest';
+  } catch (e) {
     return 'mealCompliance_guest';
   }
 };
@@ -70,8 +78,6 @@ export const markMealCompliance = (date, mealType, status) => {
   complianceData[dateKey].lastUpdated = new Date().toISOString();
 
   localStorage.setItem(key, JSON.stringify(complianceData));
-  api.updateCompliance(dateKey, complianceData[dateKey].meals)
-    .catch(err => console.warn('Could not save meal tracking to the server:', err));
 
   // Dispatch event to notify other components (like Dashboard)
   window.dispatchEvent(new CustomEvent('meal-compliance-update', {

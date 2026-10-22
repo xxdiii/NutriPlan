@@ -4,9 +4,9 @@ import {
     ArrowLeft, User, Ruler, Weight, Calendar, Activity, Save, X, Edit2,
     Heart, AlertCircle, Pill, Leaf, Globe, ChefHat, ThumbsDown, DollarSign, MapPin, Package, Info, Clock, Flame
 } from 'lucide-react';
-import { computeNutritionTargets } from '../../shared/targets';
-import { generatePlan } from '../services/mealPlanService';
-import RecipeImage from '../components/common/RecipeImage';
+import { calculateTDEE, calculateTargetCalories } from '../utils/calculations/tdee';
+import { calculateMacros } from '../utils/calculations/macros';
+import { createAndSaveMealPlan } from '../services/mealPlanGenerator';
 import {
     BUDGET_RANGES, INDIAN_STATES, HEALTH_CONDITIONS, ALLERGENS, DIETARY_PREFERENCES, CUISINES, ACTIVITY_LEVELS, GOALS
 } from '../utils/constants';
@@ -78,23 +78,42 @@ const ProfilePage = ({ setCurrentPage }) => {
     };
 
     const handleSave = async () => {
-        // Recalculate targets based on new weight/goal (the server does the same on save)
-        const updatedProfile = { ...formData, nutritionTargets: computeNutritionTargets(formData) };
+        // Recalculate targets based on new weight/goal
+        const tdee = calculateTDEE(
+            formData.weight,
+            formData.height,
+            formData.age,
+            formData.gender,
+            formData.activityLevel
+        );
 
-        // Detect if fields the planner uses changed, so the plan must be regenerated
-        const PLAN_FIELDS = ['healthConditions', 'allergies', 'dietaryPreference', 'goal', 'cuisines', 'region',
-            'budget', 'servings', 'mealPrepPreference', 'cookingSkill', 'dislikedFoods', 'medications'];
+        const targetCalories = calculateTargetCalories(tdee, formData.goal);
+        const macros = calculateMacros(targetCalories, formData.goal, formData.dietaryPreference);
+
+        const updatedProfile = {
+            ...formData,
+            nutritionTargets: {
+                tdee,
+                targetCalories,
+                macros
+            }
+        };
+
+        // Detect if critical fields changed that require plan regeneration
         const needsRegeneration =
-            PLAN_FIELDS.some(field => JSON.stringify(userProfile[field]) !== JSON.stringify(updatedProfile[field])) ||
-            userProfile.nutritionTargets?.targetCalories !== updatedProfile.nutritionTargets.targetCalories;
+            JSON.stringify(userProfile.healthConditions) !== JSON.stringify(updatedProfile.healthConditions) ||
+            JSON.stringify(userProfile.allergies) !== JSON.stringify(updatedProfile.allergies) ||
+            userProfile.dietaryPreference !== updatedProfile.dietaryPreference ||
+            userProfile.nutritionTargets.targetCalories !== updatedProfile.nutritionTargets.targetCalories ||
+            userProfile.goal !== updatedProfile.goal;
 
         try {
-            const saved = await api.saveUserProfile(updatedProfile);
-            setUserProfile(saved);
-            localStorage.setItem('userProfile', JSON.stringify(saved));
+            await api.saveUserProfile(updatedProfile);
+            setUserProfile(updatedProfile);
 
             if (needsRegeneration) {
-                await generatePlan();
+                console.log('🔄 critical profile changes detected, regenerating meal plan...');
+                await createAndSaveMealPlan(updatedProfile);
             }
         } catch (error) {
             console.error('Failed to save profile:', error);
@@ -502,9 +521,9 @@ const ProfilePage = ({ setCurrentPage }) => {
                                         : isDark ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
                                         }`}
                                 >
-                                    <option value="cut">Lose Weight</option>
+                                    <option value="lose">Lose Weight</option>
                                     <option value="maintain">Maintain Weight</option>
-                                    <option value="bulk">Gain Muscle</option>
+                                    <option value="gain">Gain Muscle</option>
                                 </select>
                             </div>
                         </div>
@@ -654,7 +673,11 @@ const ProfilePage = ({ setCurrentPage }) => {
                                         className={`group cursor-pointer rounded-xl overflow-hidden transition-all hover:shadow-lg ${isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-white border border-gray-100'}`}
                                     >
                                         <div className="relative h-40 overflow-hidden">
-                                            <RecipeImage recipe={recipe} className="w-full h-full transition-transform group-hover:scale-110" />
+                                            <img
+                                                src={recipe.imageUrl || `https://via.placeholder.com/400x300?text=${recipe.name}`}
+                                                alt={recipe.name}
+                                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                            />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
                                             <div className="absolute bottom-2 left-3 right-3">
                                                 <h4 className="text-white font-bold truncate text-shadow-sm">{recipe.name}</h4>

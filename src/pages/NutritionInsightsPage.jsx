@@ -3,8 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrendingUp, Droplets, Flame, Award, CheckCircle2, BarChart3 } from 'lucide-react';
 import { api } from '../services/api';
-import { getComplianceStats, getWeeklyMealBreakdown, getStorageKey as getComplianceStorageKey } from '../services/complianceService';
-import { loadPlan } from '../services/mealPlanService';
+import { getComplianceStats, getWeeklyMealBreakdown } from '../services/complianceService';
 import ComplianceHeatmap from '../components/compliance/ComplianceHeatmap';
 
 // ── SVG Donut Chart ────────────────────────────────────────────────────────
@@ -91,7 +90,9 @@ const NutritionInsightsPage = () => {
       setProfile(p);
 
       // Load meal plan
-      const plan = await loadPlan();
+      let plan = null;
+      try { plan = await api.getMealPlan(); } catch (_) {}
+      if (!plan) { const l = localStorage.getItem('weeklyMealPlan'); if (l) plan = JSON.parse(l); }
       setMealPlan(plan);
 
       // Build 7-day trend from compliance + mealplan
@@ -127,7 +128,16 @@ const NutritionInsightsPage = () => {
       setHydrationData(hydArr);
 
       // Build calorie trend from meal plan + compliance
-      const compData = JSON.parse(localStorage.getItem(getComplianceStorageKey()) || '{}');
+      const key = (() => {
+        try {
+          const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+          if (u.id) return `mealCompliance_${u.id}`;
+          const au = JSON.parse(localStorage.getItem('user') || '{}');
+          if (au.id) return `mealCompliance_${au.id}`;
+        } catch (_) {}
+        return 'mealCompliance_guest';
+      })();
+      const compData = JSON.parse(localStorage.getItem(key) || '{}');
       const planDays = plan?.plan || [];
       const target = p?.nutritionTargets?.targetCalories || 2000;
       const trendArr = [];
@@ -139,7 +149,7 @@ const NutritionInsightsPage = () => {
         const dd = String(d.getDate()).padStart(2, '0');
         const ds = `${yyyy}-${mm}-${dd}`;
         const label = d.toLocaleDateString('en-US', { weekday: 'short' });
-        const dayPlan = planDays.find(x => x.date === ds) || null;
+        const dayPlan = planDays.find(x => x.date === ds) || planDays[6 - i] || null;
         const compDay = compData[ds];
         let cals = 0, prot = 0, carbG = 0, fatG = 0;
         if (dayPlan && compDay) {
@@ -161,7 +171,7 @@ const NutritionInsightsPage = () => {
       const todayM = String(today.getMonth() + 1).padStart(2, '0');
       const todayD = String(today.getDate()).padStart(2, '0');
       const todayStr = `${todayY}-${todayM}-${todayD}`;
-      const todayPlan = planDays.find(x => x.date === todayStr);
+      const todayPlan = planDays.find(x => x.date === todayStr) || planDays[0];
       const todayComp = compData[todayStr];
       let stats = { calories: 0, protein: 0, carbs: 0, fat: 0 };
       if (todayPlan && todayComp) {

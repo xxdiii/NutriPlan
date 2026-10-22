@@ -2,27 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { CheckCircle2, Zap, Leaf, Dumbbell, Heart, Flame, Scale, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
-import { computeNutritionTargets } from '../../shared/targets';
-import { generatePlan } from '../services/mealPlanService';
-import { readSynced, writeSynced } from '../services/syncedStorage';
-
-/** The profile as it would be with `plan` applied. */
-const applyPlan = (profile, plan) => ({
-  ...profile,
-  goal: plan.goal || profile.goal,
-  targetRate: plan.goal ? plan.targetRate ?? profile.targetRate : profile.targetRate,
-  macroProfile: plan.macroProfile,
-  dietaryPreference: plan.dietaryPreference || profile.dietaryPreference,
-  budget: plan.budget || profile.budget,
-});
-
-/** Protein/carbs/fat as % of calories for this user under `plan`. */
-const macroSplitFor = (profile, plan) => {
-  const { targetCalories, macros } = computeNutritionTargets(applyPlan(profile, plan));
-  if (!targetCalories) return null;
-  const pct = (grams, kcalPerGram) => Math.round((grams * kcalPerGram / targetCalories) * 100);
-  return { protein: pct(macros.protein, 4), carbs: pct(macros.carbs, 4), fat: pct(macros.fat, 9), kcal: targetCalories };
-};
+import { calculateTDEE, calculateTargetCalories } from '../utils/calculations/tdee';
+import { calculateMacros } from '../utils/calculations/macros';
+import { createAndSaveMealPlan } from '../services/mealPlanGenerator';
 
 // ── Plan definitions ─────────────────────────────────────────────────────────
 const PLAN_ARCHETYPES = [
@@ -33,12 +15,12 @@ const PLAN_ARCHETYPES = [
     icon: Heart,
     gradient: 'linear-gradient(135deg, oklch(58% 0.18 152), oklch(52% 0.16 200))',
     glowColor: 'oklch(58% 0.18 152)',
-    // Fields saved to the profile when applied; null keeps the user's own choice.
     goal: 'maintain',
-    macroProfile: 'balanced',
-    dietaryPreference: null,
+    dietaryPreference: null, // uses user's existing preference
+    macroSplit: { protein: 25, carbs: 50, fat: 25 },
     features: ['Balanced macros', 'Varied meals', 'All food groups', 'Sustainable long-term'],
     bestFor: 'Maintenance & general wellness',
+    calorieAdjust: 0, // TDEE modifier %
   },
   {
     id: 'weight-loss',
@@ -47,12 +29,12 @@ const PLAN_ARCHETYPES = [
     icon: Scale,
     gradient: 'linear-gradient(135deg, oklch(60% 0.18 30), oklch(58% 0.16 52))',
     glowColor: 'oklch(60% 0.18 30)',
-    goal: 'cut',
-    targetRate: 0.5,
-    macroProfile: 'balanced',
+    goal: 'lose',
     dietaryPreference: null,
+    macroSplit: { protein: 35, carbs: 40, fat: 25 },
     features: ['High protein', 'Calorie deficit', 'Fiber-rich foods', 'Appetite control'],
     bestFor: 'Losing weight at 0.5kg/week',
+    calorieAdjust: -15,
   },
   {
     id: 'muscle-gain',
@@ -61,12 +43,12 @@ const PLAN_ARCHETYPES = [
     icon: Dumbbell,
     gradient: 'linear-gradient(135deg, oklch(52% 0.2 280), oklch(58% 0.18 260))',
     glowColor: 'oklch(52% 0.2 280)',
-    goal: 'bulk',
-    targetRate: 0.25,
-    macroProfile: 'high_protein',
+    goal: 'gain',
     dietaryPreference: null,
+    macroSplit: { protein: 35, carbs: 45, fat: 20 },
     features: ['High protein (2g/kg)', 'Calorie surplus', 'Pre/post workout meals', 'Muscle recovery foods'],
     bestFor: 'Building muscle with training',
+    calorieAdjust: +15,
   },
   {
     id: 'high-protein',
@@ -75,11 +57,12 @@ const PLAN_ARCHETYPES = [
     icon: Zap,
     gradient: 'linear-gradient(135deg, oklch(55% 0.18 310), oklch(52% 0.2 280))',
     glowColor: 'oklch(55% 0.18 310)',
-    goal: null,
-    macroProfile: 'high_protein',
+    goal: 'maintain',
     dietaryPreference: null,
-    features: ['1.8-2 g protein per kg', 'Low glycaemic carbs', 'Lean proteins priority', 'Satiety focused'],
+    macroSplit: { protein: 40, carbs: 35, fat: 25 },
+    features: ['40% protein calories', 'Low glycaemic carbs', 'Lean proteins priority', 'Satiety focused'],
     bestFor: 'Body recomposition',
+    calorieAdjust: 0,
   },
   {
     id: 'vegan',
@@ -88,11 +71,12 @@ const PLAN_ARCHETYPES = [
     icon: Leaf,
     gradient: 'linear-gradient(135deg, oklch(55% 0.2 145), oklch(58% 0.18 180))',
     glowColor: 'oklch(55% 0.2 145)',
-    goal: null,
-    macroProfile: 'balanced',
+    goal: 'maintain',
     dietaryPreference: 'vegan',
+    macroSplit: { protein: 20, carbs: 55, fat: 25 },
     features: ['100% plant-based', 'Legume-rich proteins', 'Ethical & sustainable', 'Rich in fibre & antioxidants'],
     bestFor: 'Vegan lifestyle & ethics',
+    calorieAdjust: 0,
   },
   {
     id: 'vegetarian',
@@ -101,11 +85,12 @@ const PLAN_ARCHETYPES = [
     icon: Leaf,
     gradient: 'linear-gradient(135deg, oklch(62% 0.16 135), oklch(60% 0.18 160))',
     glowColor: 'oklch(62% 0.16 135)',
-    goal: null,
-    macroProfile: 'balanced',
+    goal: 'maintain',
     dietaryPreference: 'vegetarian',
-    features: ['Dairy included', 'Plant-forward meals', 'High fibre', 'Heart healthy'],
+    macroSplit: { protein: 22, carbs: 52, fat: 26 },
+    features: ['Dairy & eggs included', 'Plant-forward meals', 'High fibre', 'Heart healthy'],
     bestFor: 'Vegetarian preference',
+    calorieAdjust: 0,
   },
   {
     id: 'keto-low-carb',
@@ -114,11 +99,12 @@ const PLAN_ARCHETYPES = [
     icon: Flame,
     gradient: 'linear-gradient(135deg, oklch(58% 0.18 22), oklch(55% 0.18 40))',
     glowColor: 'oklch(58% 0.18 22)',
-    goal: null,
-    macroProfile: 'low_carb',
+    goal: 'lose',
     dietaryPreference: null,
-    features: ['Carbs capped at 25%', 'Fat as fuel', 'Blood sugar control', 'Reduced cravings'],
+    macroSplit: { protein: 30, carbs: 20, fat: 50 },
+    features: ['Low glycaemic index', 'Fat as fuel', 'Blood sugar control', 'Reduced cravings'],
     bestFor: 'Metabolic health & fat loss',
+    calorieAdjust: -10,
   },
   {
     id: 'budget-friendly',
@@ -127,12 +113,12 @@ const PLAN_ARCHETYPES = [
     icon: Sparkles,
     gradient: 'linear-gradient(135deg, oklch(60% 0.16 200), oklch(58% 0.14 220))',
     glowColor: 'oklch(60% 0.16 200)',
-    goal: null,
-    macroProfile: 'balanced',
-    budget: 'low',
+    goal: 'maintain',
     dietaryPreference: null,
-    features: ['Meals around ₹100 a day', 'Dal, eggs and seasonal produce', 'Bulk-cooking friendly', 'No expensive ingredients'],
+    macroSplit: { protein: 25, carbs: 52, fat: 23 },
+    features: ['Cost-effective meals', 'Seasonal produce', 'Bulk-cooking friendly', 'No expensive ingredients'],
     bestFor: 'Students & budget-conscious',
+    calorieAdjust: 0,
   },
 ];
 
@@ -146,8 +132,8 @@ const MacroBar = ({ split }) => (
 );
 
 // ── Plan Card ─────────────────────────────────────────────────────────────────
-const PlanCard = ({ plan, macroSplit, isActive, isApplying, onApply, isDark }) => {
-  const { icon: Icon, name, tagline, gradient, glowColor, features, bestFor } = plan;
+const PlanCard = ({ plan, isActive, isApplying, onApply, isDark }) => {
+  const { icon: Icon, name, tagline, gradient, glowColor, macroSplit, features, bestFor } = plan;
   const border = isDark ? 'oklch(28% 0.03 152)' : 'oklch(88% 0.018 152)';
 
   return (
@@ -181,10 +167,10 @@ const PlanCard = ({ plan, macroSplit, isActive, isApplying, onApply, isDark }) =
 
       {/* Card body */}
       <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {/* Macro split, calculated for this user */}
-        {macroSplit && <div>
+        {/* Macro split */}
+        <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-muted)' }}>{macroSplit.kcal} kcal / day</span>
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-muted)' }}>Macro split</span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               {[['P', macroSplit.protein, 'var(--color-brand)'], ['C', macroSplit.carbs, 'oklch(68% 0.15 52)'], ['F', macroSplit.fat, 'oklch(60% 0.14 30)']].map(([l, v, c]) => (
                 <span key={l} style={{ fontFamily: 'var(--font-ui)', fontSize: '0.68rem', fontWeight: 700, color: c }}>{l} {v}%</span>
@@ -192,7 +178,7 @@ const PlanCard = ({ plan, macroSplit, isActive, isApplying, onApply, isDark }) =
             </div>
           </div>
           <MacroBar split={macroSplit} />
-        </div>}
+        </div>
 
         {/* Features */}
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
@@ -247,10 +233,11 @@ const PlanLibraryPage = ({ setCurrentPage }) => {
   useEffect(() => {
     const load = async () => {
       let p = null;
-      try { p = await api.getUserProfile(); } catch { /* fall back to the cached profile */ }
+      try { p = await api.getUserProfile(); } catch (_) {}
       if (!p) { const l = localStorage.getItem('userProfile'); if (l) p = JSON.parse(l); }
       setProfile(p);
-      const saved = readSynced('activePlanId');
+      // Detect current active plan from profile goal + dietary preference
+      const saved = localStorage.getItem('activePlanId');
       if (saved) setActivePlanId(saved);
     };
     load();
@@ -265,14 +252,26 @@ const PlanLibraryPage = ({ setCurrentPage }) => {
     if (!profile) return;
     setApplyingId(plan.id);
     try {
-      // The server recalculates calorie and macro targets when the profile is saved.
-      const updatedProfile = await api.saveUserProfile(applyPlan(profile, plan));
+      // Build updated profile with new goal and dietary preference
+      const tdee = calculateTDEE(profile.weight, profile.height, profile.age, profile.gender, profile.activityLevel);
+      const targetCalories = calculateTargetCalories(tdee, plan.goal);
+      const dietPref = plan.dietaryPreference || profile.dietaryPreference;
+      const macros = calculateMacros(targetCalories, plan.goal, dietPref);
+
+      const updatedProfile = {
+        ...profile,
+        goal: plan.goal,
+        dietaryPreference: dietPref,
+        nutritionTargets: { tdee, targetCalories, macros },
+      };
+
+      await api.saveUserProfile(updatedProfile);
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
       setProfile(updatedProfile);
 
       // Regenerate meal plan
-      await generatePlan();
-      writeSynced('activePlanId', plan.id);
+      await createAndSaveMealPlan(updatedProfile);
+      localStorage.setItem('activePlanId', plan.id);
       setActivePlanId(plan.id);
 
       showToast(`✅ "${plan.name}" applied! Your meal plan has been regenerated.`);
@@ -319,7 +318,6 @@ const PlanLibraryPage = ({ setCurrentPage }) => {
             <PlanCard
               key={plan.id}
               plan={plan}
-              macroSplit={profile?.weight ? macroSplitFor(profile, plan) : null}
               isActive={activePlanId === plan.id}
               isApplying={applyingId === plan.id}
               onApply={handleApply}

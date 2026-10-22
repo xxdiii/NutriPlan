@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Check, Download, Printer, Copy, FileText, Share2, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { jsPDF } from "jspdf";
-import { readSynced, writeSynced } from '../../services/syncedStorage';
 
 const ShoppingList = ({ shoppingList, costEstimate }) => {
   const { isDark } = useTheme();
-  // Load checked items (cached locally, synced to the server)
-  const [checkedItems, setCheckedItems] = useState(() => readSynced('shoppingChecked', {}) || {});
+  // Load checked items from local storage
+  const [checkedItems, setCheckedItems] = useState(() => {
+    const saved = localStorage.getItem('shopping_checked_items');
+    return saved ? JSON.parse(saved) : {};
+  });
 
   const [expandedCategories, setExpandedCategories] = useState({
     vegetables: false,
@@ -20,9 +22,9 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
     others: false
   });
 
-  // Save checked items whenever they change
+  // Save checked items to local storage whenever they change
   useEffect(() => {
-    writeSynced('shoppingChecked', checkedItems);
+    localStorage.setItem('shopping_checked_items', JSON.stringify(checkedItems));
   }, [checkedItems]);
 
   const categoryIcons = {
@@ -240,17 +242,6 @@ const ShoppingList = ({ shoppingList, costEstimate }) => {
               <Trash2 className="w-3 h-3 mr-1" />
               Clear checked
             </button>
-          </div>
-        )}
-        {costEstimate?.total > 0 && (
-          <div className={`mt-3 pt-3 border-t text-sm flex flex-wrap justify-between gap-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-              Estimated cost{costEstimate.cookFor > 1 ? ` for ${costEstimate.cookFor} people` : ''}
-            </span>
-            <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              ₹{costEstimate.total.toLocaleString('en-IN')} / week · ₹{costEstimate.perPersonPerDay} per person per day
-            </span>
-            <span className={`w-full text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{costEstimate.note}</span>
           </div>
         )}
       </div>
