@@ -9,7 +9,7 @@ export const PORTION_UNITS = ['piece', 'slice', 'katori', 'bowl', 'plate', 'glas
 const DAILY_LIMIT = Number(process.env.GEMINI_DAILY_LIMIT) || 60;
 const MAX_ATTEMPTS = 3;
 const CACHE_SIZE = 200;
-const RETRYABLE = new Set([429, 500, 503]);
+const RETRYABLE = new Set([429, 500, 503, 504]);
 
 export class AiError extends Error {
     constructor(message, status = 502) {
@@ -99,34 +99,100 @@ export const prismaQuota = {
  * @param client  object with models.generateContent (a GoogleGenAI instance, or a mock)
  * @param quota   { used(userId), add(userId) }
  */
-export const createGeminiService = ({ client, model, quota = prismaQuota, sleep = ms => new Promise(r => setTimeout(r, ms)), limit = DAILY_LIMIT }) => {
-    const cache = new Map();
+const REQUEST_TIMEOUT_MS = 30000;
+const FALLBACK_ATTEMPTS = 2;
+// Overload (503) and timeouts are retried once; rate limits (429) up to MAX_ATTEMPTS.
+const OVERLOAD_ATTEMPTS = 2;
+// After a model stays overloaded, requests skip it for this long and use the fallback.
+const OVERLOAD_COOLDOWN_MS = 2 * 60 * 1000;
+const overloadedUntil = new Map();
 
-    const generate = async (contents, systemInstruction) => {
+/** Forget which models were overloaded (for tests). */
+export const resetModelHealth = () => overloadedUntil.clear();
+
+// The SDK wraps an aborted fetch in a plain Error, so the message is checked too.
+const isTimeout = (error) => ['AbortError', 'TimeoutError'].includes(error?.name) || /AbortError|aborted|timed? ?out/i.test(String(error?.message));
+
+const toAiError = (status) => {
+    if (status === 429) return new AiError('The AI service is busy right now. Try again in a minute.', 429);
+    if (status === 503 || status === 504) return new AiError("Gemini is overloaded right now (a temporary spike on Google's side). Try again in a minute.", 503);
+    return new AiError('Could not reach the AI service. Try again in a moment.');
+};
+
+/**
+ * One generateContent call with a timeout, retried with backoff on rate limits, overload
+ * and timeouts. If the model is still unavailable, the fallback model is tried.
+ * @param options.fallbackModel  model to use when `request.model` keeps failing
+ * @param options.onFallback     called with the fallback model when it answered
+ * @returns the SDK response
+ */
+export const generateWithRetry = async (client, request, sleep = ms => new Promise(r => setTimeout(r, ms)), { fallbackModel = null, onFallback, timeoutMs = REQUEST_TIMEOUT_MS } = {}) => {
+    const hasFallback = fallbackModel && fallbackModel !== request.model;
+    const skipMain = hasFallback && (overloadedUntil.get(request.model) || 0) > Date.now();
+    const models = [...(skipMain ? [] : [request.model]), ...(hasFallback ? [fallbackModel] : [])];
+    let lastStatus = 0;
+    for (const model of models) {
+        const isFallback = model !== request.model;
         for (let attempt = 1; ; attempt++) {
             try {
                 const response = await client.models.generateContent({
+                    ...request,
                     model,
-                    contents,
-                    config: { systemInstruction, responseMimeType: 'application/json', responseSchema: PARSE_SCHEMA, temperature: 0.1 },
+                    config: { ...request.config, abortSignal: AbortSignal.timeout(timeoutMs) },
                 });
-                return JSON.parse(response.text);
+                if (isFallback) onFallback?.(model);
+                return response;
             } catch (error) {
-                const status = errorStatus(error);
-                if (RETRYABLE.has(status) && attempt < MAX_ATTEMPTS) {
-                    await sleep(1000 * 2 ** (attempt - 1));
-                    continue;
+                lastStatus = isTimeout(error) ? 504 : errorStatus(error);
+                console.error(`Gemini ${model} failed (status ${lastStatus || 'none'}):`, String(error?.message || error).slice(0, 200));
+                if (!RETRYABLE.has(lastStatus)) throw toAiError(lastStatus);
+                const overloaded = lastStatus === 503 || lastStatus === 504;
+                const attempts = isFallback ? FALLBACK_ATTEMPTS : overloaded ? OVERLOAD_ATTEMPTS : MAX_ATTEMPTS;
+                if (attempt >= attempts) {
+                    if (overloaded && !isFallback && hasFallback) overloadedUntil.set(model, Date.now() + OVERLOAD_COOLDOWN_MS);
+                    break;
                 }
-                if (status === 429) throw new AiError('The AI service is busy right now. Try again in a minute.', 429);
-                if (error instanceof SyntaxError) throw new AiError('The AI returned an unreadable answer. Try again.');
-                throw new AiError('Could not reach the AI service. Try again, or add items by search.');
+                await sleep(1000 * 2 ** (attempt - 1));
             }
         }
-    };
+    }
+    throw toAiError(lastStatus);
+};
 
-    const checkQuota = async (userId) => {
-        if ((await quota.used(userId)) >= limit) {
-            throw new AiError(`You have used today's ${limit} AI logs. Add items by search instead.`, 429);
+/** Throws when the user has used today's AI requests. */
+export const checkQuota = async (quota, userId, limit = DAILY_LIMIT) => {
+    if ((await quota.used(userId)) >= limit) {
+        throw new AiError(`You have used today's ${limit} AI requests. They reset at midnight (UTC).`, 429);
+    }
+};
+
+/** The SDK client for the configured key, or an error when there is none. */
+export const defaultClient = () => {
+    if (!process.env.GEMINI_API_KEY) throw new AiError('AI features are not set up (GEMINI_API_KEY is missing).', 503);
+    return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+};
+
+export const defaultModel = () => process.env.GEMINI_MODEL || 'gemini-flash-latest';
+// Used when the main model is overloaded (Google returns 503 during demand spikes).
+export const defaultFallbackModel = () => process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash';
+
+/**
+ * @param client  object with models.generateContent (a GoogleGenAI instance, or a mock)
+ * @param quota   { used(userId), add(userId) }
+ */
+export const createGeminiService = ({ client, model, fallbackModel = null, quota = prismaQuota, sleep = ms => new Promise(r => setTimeout(r, ms)), limit = DAILY_LIMIT }) => {
+    const cache = new Map();
+
+    const generate = async (contents, systemInstruction) => {
+        const response = await generateWithRetry(client, {
+            model,
+            contents,
+            config: { systemInstruction, responseMimeType: 'application/json', responseSchema: PARSE_SCHEMA, temperature: 0.1 },
+        }, sleep, { fallbackModel });
+        try {
+            return JSON.parse(response.text);
+        } catch {
+            throw new AiError('The AI returned an unreadable answer. Try again.');
         }
     };
 
@@ -139,7 +205,7 @@ export const createGeminiService = ({ client, model, quota = prismaQuota, sleep 
             const cacheKey = input.text ? input.text.trim().toLowerCase().replace(/\s+/g, ' ') : null;
             if (cacheKey && cache.has(cacheKey)) return cache.get(cacheKey);
 
-            await checkQuota(userId);
+            await checkQuota(quota, userId, limit);
             const parts = input.text
                 ? [{ text: `What did I eat? "${input.text.trim()}"` }]
                 : [{ inlineData: { mimeType: input.mimeType, data: input.image } }, { text: 'What food is in this photo, and how much?' }];
@@ -160,12 +226,6 @@ let defaultService = null;
 
 /** The app's service, created on first use so tests and scripts don't need a key. */
 export const gemini = () => {
-    if (!process.env.GEMINI_API_KEY) throw new AiError('AI logging is not set up (GEMINI_API_KEY is missing).', 503);
-    if (!defaultService) {
-        defaultService = createGeminiService({
-            client: new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }),
-            model: process.env.GEMINI_MODEL || 'gemini-flash-latest',
-        });
-    }
+    if (!defaultService) defaultService = createGeminiService({ client: defaultClient(), model: defaultModel(), fallbackModel: defaultFallbackModel() });
     return defaultService;
 };

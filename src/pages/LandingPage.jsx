@@ -876,7 +876,7 @@ const LandingPage = ({ setCurrentPage }) => {
                 desc: 'Responsive web app — dietary type, allergies, goals, budget input. Displays plans, dashboards, and analytics.',
                 color: 'var(--color-brand)',
                 bg: isDark ? 'oklch(20% 0.04 152)' : 'oklch(93% 0.05 152)',
-                items: ['Meal plan viewer', 'Compliance tracker', 'Hydration logger', 'AI Diet Assistant'],
+                items: ['Meal plan viewer', 'Compliance tracker', 'Hydration logger', 'AI Coach'],
               },
               {
                 layer: '02',

@@ -75,8 +75,9 @@ const NextMealCard = ({ todaysMeals, onViewRecipe }) => {
             </div>
 
             <div className="flex items-center text-sm space-x-4 mb-6 text-gray-500">
-                <span>🔥 {nextMeal.calories} cal</span>
-                <span>🥩 {nextMeal.protein}g protein</span>
+                {/* Eating-out meals are a calorie budget; their macros are unknown */}
+                <span>🔥 {nextMeal.eatingOut ? `Budget ${nextMeal.calories}` : nextMeal.calories} cal</span>
+                {!nextMeal.eatingOut && <span>🥩 {nextMeal.protein}g protein</span>}
             </div>
 
             <button

@@ -10,6 +10,7 @@ import favoriteRoutes from './routes/favorites.js';
 import userDataRoutes from './routes/userData.js';
 import logRoutes from './routes/logs.js';
 import adaptiveRoutes from './routes/adaptive.js';
+import coachRoutes from './routes/coach.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -25,6 +26,7 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/user-data', userDataRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/adaptive', adaptiveRoutes);
+app.use('/api/coach', coachRoutes);
 // Compliance, weight logs and hydration keep their original paths (/api/compliance, ...).
 app.use('/api', trackingRoutes);
 

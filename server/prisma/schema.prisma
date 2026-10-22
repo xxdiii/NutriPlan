@@ -31,6 +31,7 @@ model User {
   foodLogs        FoodLog[]
   aiUsage         AiUsage[]
   checkIns        CheckIn[]
+  coachMessages   CoachMessage[]
 }
 
 model MealPlan {
@@ -236,4 +237,18 @@ model CheckIn {
   createdAt    DateTime @default(now())
 
   @@index([userId, date])
+}
+
+// AI coach conversation (F7). Assistant messages may carry proposed plan changes or food
+// logs that only take effect when the user applies them.
+model CoachMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // user | assistant
+  content   String
+  proposals String?  // JSON array: { action, title, status, changes, payload, ... }
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

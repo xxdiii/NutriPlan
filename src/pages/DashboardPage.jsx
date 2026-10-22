@@ -363,7 +363,7 @@ const DashboardPage = ({ setCurrentPage }) => {
                                   {meal.name}
                                 </p>
                                 <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                                  {meal.calories} cal | {meal.protein}g protein
+                                  {meal.eatingOut ? `Budget ${meal.calories} cal` : `${meal.calories} cal | ${meal.protein}g protein`}
                                 </p>
                               </>
                             ) : (

@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { id: 'mealplan',      label: 'Meal Plan',    icon: CalendarDays    },
   { id: 'plan-library',  label: 'Plan Library', icon: BookOpen        },
   { id: 'insights',      label: 'Insights',     icon: LineChart       },
-  { id: 'ai-assistant',  label: 'AI Assistant', icon: Sparkles        },
+  { id: 'ai-assistant',  label: 'AI Coach',     icon: Sparkles        },
   { id: 'progress',      label: 'Progress',     icon: BarChart2       },
   { id: 'shopping',      label: 'Shop',         icon: ShoppingBag     },
   { id: 'recipes',       label: 'Recipes',      icon: UtensilsCrossed },

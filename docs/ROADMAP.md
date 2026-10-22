@@ -263,6 +263,8 @@ Clear "not medical advice" wording throughout.
 
 #### F7 An AI coach that uses your data and can act on your plan
 
+> **Status: built** (see [F7_PLAN.md](F7_PLAN.md)), before F3. `replan_week` became `replan_days` with two modes: `eat_out` (travel, no kitchen: calorie budgets per meal; too few no-cook recipes exist to plan home meals) and `fresh`. Household context will be added with F3. Meals already eaten are locked. Gemini 503s fall back to a second model.
+
 This replaces the canned `AIDietAssistantPage.jsx`.
 
 **How it works:**

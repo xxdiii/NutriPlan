@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { createGeminiService, AiError } from '../../services/gemini.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createGeminiService, generateWithRetry, resetModelHealth, AiError } from '../../services/gemini.js';
 
 const memoryQuota = () => {
     const counts = new Map();
@@ -83,5 +83,50 @@ describe('gemini service', () => {
         await service.parseMeal(1, { text: '2 Roti' }, []);
         await service.parseMeal(1, { text: '  2 roti ' }, []);
         expect(client.models.generateContent).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('generateWithRetry', () => {
+    const sleep = async () => {};
+    beforeEach(() => resetModelHealth());
+    const request = { model: 'main', contents: [], config: { temperature: 0 } };
+
+    it('switches to the fallback model when the main one stays overloaded', async () => {
+        const generateContent = vi.fn(async ({ model }) => {
+            if (model === 'main') throw apiError(503);
+            return { text: 'ok' };
+        });
+        const onFallback = vi.fn();
+        const response = await generateWithRetry({ models: { generateContent } }, request, sleep, { fallbackModel: 'backup', onFallback });
+        expect(response.text).toBe('ok');
+        expect(generateContent.mock.calls.map(c => c[0].model)).toEqual(['main', 'main', 'backup']);
+        expect(onFallback).toHaveBeenCalledWith('backup');
+
+        // While the main model is cooling down, requests go straight to the fallback.
+        generateContent.mockClear();
+        await generateWithRetry({ models: { generateContent } }, request, sleep, { fallbackModel: 'backup' });
+        expect(generateContent.mock.calls.map(c => c[0].model)).toEqual(['backup']);
+        expect(generateContent.mock.calls[0][0].config.abortSignal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('treats timeouts as retryable', async () => {
+        let calls = 0;
+        const generateContent = vi.fn(async () => {
+            calls++;
+            if (calls === 1) throw Object.assign(new Error('timed out'), { name: 'TimeoutError' });
+            return { text: 'ok' };
+        });
+        await expect(generateWithRetry({ models: { generateContent } }, request, sleep)).resolves.toEqual({ text: 'ok' });
+    });
+
+    it('does not fall back on a bad request', async () => {
+        const generateContent = vi.fn(async () => { throw apiError(400); });
+        await expect(generateWithRetry({ models: { generateContent } }, request, sleep, { fallbackModel: 'backup' })).rejects.toBeInstanceOf(AiError);
+        expect(generateContent).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports overload as 503 when every model fails', async () => {
+        const generateContent = vi.fn(async () => { throw apiError(503); });
+        await expect(generateWithRetry({ models: { generateContent } }, request, sleep, { fallbackModel: 'backup' })).rejects.toMatchObject({ status: 503 });
     });
 });

@@ -52,7 +52,8 @@ export const syncPlanLogs = async (userId, date, meals) => {
     for (const slot of LOG_SLOTS) {
         const current = existing.filter(l => l.slot === slot);
         const meal = day?.[slot];
-        if (meals?.[slot] !== 'eaten' || !meal) {
+        // Eating-out meals are only a calorie budget; the user logs what they actually ate.
+        if (meals?.[slot] !== 'eaten' || !meal || meal.eatingOut) {
             if (current.length) await prisma.foodLog.deleteMany({ where: { id: { in: current.map(l => l.id) } } });
             continue;
         }

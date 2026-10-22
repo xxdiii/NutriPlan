@@ -120,7 +120,13 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
           )}
         </div>
 
-        {/* Nutrition Info */}
+        {/* Nutrition Info (eating-out meals are only a calorie budget) */}
+        {meal.eatingOut ? (
+          <div className={`mb-4 p-2 rounded-lg text-sm ${isDark ? 'bg-orange-900/30 text-orange-300' : 'bg-orange-50 text-orange-800'}`}>
+            <Flame className="w-4 h-4 inline mr-1" />
+            Budget about {meal.calories} kcal. Log what you actually eat.
+          </div>
+        ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           <div className={`p-2 rounded-lg text-center ${isDark ? 'bg-orange-900/30' : 'bg-orange-50'
             }`}>
@@ -168,6 +174,7 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Health notes for this user's conditions and medications */}
         {meal.warnings?.length > 0 && (

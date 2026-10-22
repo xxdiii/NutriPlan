@@ -280,6 +280,36 @@ export const api = {
         return handleResponse(res);
     },
 
+    // AI coach. Changes it suggests are proposals, applied only when the user confirms.
+    getCoachMessages: async () => {
+        const res = await fetch(`${API_URL}/coach/messages`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    // -> { messages: [userMessage, reply] }
+    sendCoachMessage: async (message, today) => {
+        const res = await fetch(`${API_URL}/coach/chat`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ message, today })
+        });
+        return handleResponse(res);
+    },
+
+    // action: 'apply' | 'dismiss'
+    resolveCoachProposal: async (messageId, index, action) => {
+        const res = await fetch(`${API_URL}/coach/messages/${messageId}/proposals/${index}/${action}`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        return handleResponse(res);
+    },
+
+    clearCoachMessages: async () => {
+        const res = await fetch(`${API_URL}/coach/messages`, { method: 'DELETE', headers: getHeaders() });
+        return handleResponse(res);
+    },
+
     // Compliance
     // All records in a range, keyed by date: { 'YYYY-MM-DD': { meals, date } }
     getComplianceRange: async (from, to) => {
