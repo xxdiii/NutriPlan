@@ -1,32 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { X, Search, PackageCheck, Package, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { readSynced, writeSynced } from '../../services/syncedStorage';
 
 /**
- * PANTRY_KEY – localStorage key where pantry items are stored as a JSON array of
- * normalised ingredient name strings (lowercase, trimmed).
- */
-export const PANTRY_KEY = 'nutriplan_pantry_items';
-
-/**
- * Load the current pantry item set from localStorage.
+ * Load the current pantry item set. Items are normalised ingredient names
+ * (lowercase, trimmed), cached in localStorage and synced to the server.
  * @returns {Set<string>}
  */
-export const loadPantry = () => {
-  try {
-    const raw = localStorage.getItem(PANTRY_KEY);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch {
-    return new Set();
-  }
-};
+export const loadPantry = () => new Set(readSynced('pantry', []) || []);
 
 /**
- * Persist the pantry set to localStorage.
+ * Persist the pantry set.
  * @param {Set<string>} pantrySet
  */
 export const savePantry = (pantrySet) => {
-  localStorage.setItem(PANTRY_KEY, JSON.stringify([...pantrySet]));
+  writeSynced('pantry', [...pantrySet]);
 };
 
 /**

@@ -1,103 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { X, RefreshCw, Flame, Target, TrendingUp, Clock, ChefHat, Check } from 'lucide-react';
+import { X, RefreshCw, Flame, Target, Clock, Check } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { checkAllergyViolations } from '../../utils/constraints/allergyChecker';
-import { getHealthConstraintFindings } from '../../utils/constraints/healthConstraints';
-import { getMedicationFoodWarnings } from '../../utils/constraints/medicationInteractions';
+import { api } from '../../services/api';
+import RecipeImage from '../common/RecipeImage';
+import { formatDuration } from '../../utils/dates';
 
-const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userProfile }) => {
+const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, date, onSwap }) => {
   const { isDark } = useTheme();
   const [alternatives, setAlternatives] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [swappingId, setSwappingId] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    if (isOpen && currentMeal) {
-      loadAlternatives();
+    if (!isOpen || !currentMeal) return;
+    let cancelled = false;
+    const load = async () => {
       setSwappingId(null);
       setShowSuccess(false);
-    }
-  }, [isOpen, currentMeal]);
-
-  const loadAlternatives = async () => {
-    setIsLoading(true);
-
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Import recipe data based on meal type
-    let recipes = [];
-    try {
-      if (mealType === 'breakfast') {
-        const module = await import('../../data/recipes/breakfast.json');
-        recipes = module.default;
-      } else if (mealType === 'lunch') {
-        const module = await import('../../data/recipes/lunch.json');
-        recipes = module.default;
-      } else if (mealType === 'dinner') {
-        const module = await import('../../data/recipes/dinner.json');
-        recipes = module.default;
-      } else if (mealType === 'snack') {
-        const module = await import('../../data/recipes/snacks.json');
-        recipes = module.default;
+      setError('');
+      setIsLoading(true);
+      try {
+        // The server filters by diet, allergies and dislikes and portions each option
+        // to the calories of the meal being replaced.
+        const list = await api.getMealAlternatives(date, mealType);
+        if (!cancelled) setAlternatives(list);
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Could not load alternatives.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-
-      // Filter alternatives
-      const filtered = recipes.filter(recipe => {
-        // Exclude current meal
-        if (recipe.id === currentMeal.id) return false;
-
-        // Check dietary preference
-        if (userProfile?.dietaryPreference) {
-          if (!recipe.dietaryType.includes(userProfile.dietaryPreference)) {
-            // Allow some flexibility for non-veg users
-            if (userProfile.dietaryPreference !== 'non_veg') return false;
-          }
-        }
-
-        // Check allergies
-        const allergyBlocks = checkAllergyViolations(recipe, userProfile);
-        if (allergyBlocks.length > 0) return false;
-
-        return true;
-      });
-
-      // Sort by calorie similarity
-      const targetCalories = currentMeal.calories;
-      const sorted = filtered.sort((a, b) => {
-        const diffA = Math.abs(a.calories - targetCalories);
-        const diffB = Math.abs(b.calories - targetCalories);
-        return diffA - diffB;
-      });
-
-      // Get top 6 alternatives + attach explainability warnings
-      const top = sorted.slice(0, 6).map((r) => ({
-        ...r,
-        __constraints: {
-          blocked: [],
-          warnings: [...getHealthConstraintFindings(r, userProfile), ...getMedicationFoodWarnings(r, userProfile)],
-        },
-      }));
-
-      setAlternatives(top);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error loading alternatives:', error);
-      setIsLoading(false);
-    }
-  };
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isOpen, currentMeal, mealType, date]);
 
   const handleSwapClick = async (newMeal) => {
     if (swappingId) return; // Prevent multiple clicks
 
     try {
       setSwappingId(newMeal.id);
-
-      // Minimum loading time for better UX
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      onSwap(newMeal);
+      await onSwap(newMeal);
       setShowSuccess(true);
 
       // Show success for 1s before closing
@@ -105,24 +49,14 @@ const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userPro
         onClose();
         // Reset state handled by useEffect on next open
       }, 1000);
-    } catch (error) {
-      console.error("Swap failed", error);
-      // Still close or show error? For now, close to avoid stuck state
-      onClose();
+    } catch (err) {
+      console.error('Swap failed', err);
+      setError(err.message || 'Could not swap this meal.');
+      setSwappingId(null);
     }
   };
 
   if (!isOpen) return null;
-
-  const getMealTypeColor = () => {
-    switch (mealType) {
-      case 'breakfast': return 'from-orange-500 to-amber-500';
-      case 'lunch': return 'from-green-500 to-emerald-500';
-      case 'snack': return 'from-purple-500 to-pink-500';
-      case 'dinner': return 'from-blue-500 to-cyan-500';
-      default: return 'from-gray-500 to-gray-600';
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
@@ -166,15 +100,14 @@ const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userPro
             </h3>
             <div className={`p-4 rounded-xl ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
               <div className="flex items-center space-x-4">
-                <img
-                  src={currentMeal?.imageUrl}
-                  alt={currentMeal?.name}
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
+                <RecipeImage recipe={currentMeal} className="w-20 h-20 rounded-lg" emojiClassName="text-3xl" />
                 <div className="flex-1">
                   <h4 className={`font-bold text-lg mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {currentMeal?.name}
                   </h4>
+                  {currentMeal?.portionLabel && (
+                    <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{currentMeal.portionLabel}</p>
+                  )}
                   <div className="flex items-center space-x-4 text-sm">
                     <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                       <Flame className="w-4 h-4 inline mr-1" />
@@ -186,7 +119,7 @@ const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userPro
                     </span>
                     <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                       <Clock className="w-4 h-4 inline mr-1" />
-                      {currentMeal?.prepTime + currentMeal?.cookTime} min
+                      {formatDuration(currentMeal?.prepTime + currentMeal?.cookTime)}
                     </span>
                   </div>
                 </div>
@@ -200,6 +133,11 @@ const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userPro
               SWAP WITH
             </h3>
 
+            {error && (
+              <div className={`mb-4 p-3 rounded-lg text-sm ${isDark ? 'bg-red-900/30 text-red-300' : 'bg-red-50 text-red-700'}`}>
+                {error}
+              </div>
+            )}
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
@@ -222,11 +160,7 @@ const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userPro
                   >
                     {/* Image */}
                     <div className="relative h-32 overflow-hidden">
-                      <img
-                        src={meal.imageUrl}
-                        alt={meal.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <RecipeImage recipe={meal} className="w-full h-full" emojiClassName="text-4xl" />
                       {/* Calorie Diff Badge */}
                       {Math.abs(meal.calories - currentMeal.calories) <= 50 && (
                         <div className="absolute top-2 right-2 px-2 py-1 bg-emerald-600 text-white text-xs font-semibold rounded-full">
@@ -237,15 +171,18 @@ const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userPro
 
                     {/* Content */}
                     <div className="p-4">
-                      <h4 className={`font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h4 className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {meal.name}
                       </h4>
+                      {meal.portionLabel && (
+                        <p className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{meal.portionLabel}</p>
+                      )}
 
-                      {/* Constraint notes (warnings only) */}
-                      {meal.__constraints?.warnings?.length > 0 && (
+                      {/* Health notes (warnings only) */}
+                      {meal.warnings?.length > 0 && (
                         <div className={`mb-3 text-xs p-2 rounded-lg ${isDark ? 'bg-yellow-900/20 text-yellow-300 border border-yellow-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
                           }`}>
-                          {meal.__constraints.warnings[0]?.message}
+                          {meal.warnings[0].message}
                         </div>
                       )}
 
@@ -282,7 +219,7 @@ const MealSwapModal = ({ isOpen, onClose, currentMeal, mealType, onSwap, userPro
 
                       {/* Tags */}
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {meal.tags.slice(0, 2).map((tag, idx) => (
+                        {(meal.tags || []).slice(0, 2).map((tag, idx) => (
                           <span
                             key={idx}
                             className={`text-xs px-2 py-0.5 rounded-full ${isDark
