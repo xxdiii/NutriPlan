@@ -3,7 +3,8 @@ import { useTheme } from '../context/ThemeContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrendingUp, Droplets, Flame, Award, CheckCircle2, BarChart3 } from 'lucide-react';
 import { api } from '../services/api';
-import { getComplianceStats, getWeeklyMealBreakdown, getStorageKey as getComplianceStorageKey } from '../services/complianceService';
+import { getComplianceStats, getWeeklyMealBreakdown } from '../services/complianceService';
+import { localDateString } from '../utils/dates';
 import { loadPlan } from '../services/mealPlanService';
 import ComplianceHeatmap from '../components/compliance/ComplianceHeatmap';
 
@@ -126,54 +127,38 @@ const NutritionInsightsPage = () => {
       }
       setHydrationData(hydArr);
 
-      // Build calorie trend from meal plan + compliance
-      const compData = JSON.parse(localStorage.getItem(getComplianceStorageKey()) || '{}');
-      const planDays = plan?.plan || [];
+      // Calorie trend and today's intake from the food log (planned meals eaten + logged food)
       const target = p?.nutritionTargets?.targetCalories || 2000;
-      const trendArr = [];
-
+      const dates = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date(today); d.setDate(today.getDate() - i);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const ds = `${yyyy}-${mm}-${dd}`;
-        const label = d.toLocaleDateString('en-US', { weekday: 'short' });
-        const dayPlan = planDays.find(x => x.date === ds) || null;
-        const compDay = compData[ds];
-        let cals = 0, prot = 0, carbG = 0, fatG = 0;
-        if (dayPlan && compDay) {
-          ['breakfast', 'lunch', 'snack', 'dinner'].forEach(m => {
-            if (compDay.meals?.[m] === 'eaten' && dayPlan[m]) {
-              cals += dayPlan[m].calories || 0;
-              prot += dayPlan[m].protein || 0;
-              carbG += dayPlan[m].carbs || 0;
-              fatG += dayPlan[m].fat || 0;
-            }
-          });
-        }
-        trendArr.push({ day: label, Calories: cals, Protein: prot, Carbs: carbG, Fat: fatG, Target: target });
+        dates.push(d);
       }
-      setTrendData(trendArr);
+      let summary = {};
+      try {
+        summary = await api.getFoodLogSummary(localDateString(dates[0]), localDateString(today));
+      } catch (error) {
+        console.warn('Could not load the food log:', error);
+      }
+      setTrendData(dates.map(d => {
+        const day = summary[localDateString(d)] || {};
+        return {
+          day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          Calories: Math.round(day.kcal || 0),
+          Protein: Math.round(day.protein || 0),
+          Carbs: Math.round(day.carbs || 0),
+          Fat: Math.round(day.fat || 0),
+          Target: target,
+        };
+      }));
 
-      // Today consumed
-      const todayY = today.getFullYear();
-      const todayM = String(today.getMonth() + 1).padStart(2, '0');
-      const todayD = String(today.getDate()).padStart(2, '0');
-      const todayStr = `${todayY}-${todayM}-${todayD}`;
-      const todayPlan = planDays.find(x => x.date === todayStr);
-      const todayComp = compData[todayStr];
-      let stats = { calories: 0, protein: 0, carbs: 0, fat: 0 };
-      if (todayPlan && todayComp) {
-        ['breakfast', 'lunch', 'snack', 'dinner'].forEach(m => {
-          if (todayComp.meals?.[m] === 'eaten' && todayPlan[m]) {
-            stats.calories += todayPlan[m].calories || 0;
-            stats.protein += todayPlan[m].protein || 0;
-            stats.carbs += todayPlan[m].carbs || 0;
-            stats.fat += todayPlan[m].fat || 0;
-          }
-        });
-      }
+      const todayTotals = summary[localDateString(today)] || {};
+      const stats = {
+        calories: Math.round(todayTotals.kcal || 0),
+        protein: Math.round(todayTotals.protein || 0),
+        carbs: Math.round(todayTotals.carbs || 0),
+        fat: Math.round(todayTotals.fat || 0),
+      };
       setConsumed(stats);
     };
     load();

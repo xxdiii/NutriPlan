@@ -19,6 +19,8 @@ export const MACRO_PROFILES = {
 
 // Lowest daily intake the app will target without medical supervision.
 const CALORIE_FLOOR = { male: 1500, female: 1200 };
+// Fastest planned weight loss: 1% of body weight per week.
+const MAX_WEEKLY_LOSS_SHARE = 0.01;
 // Most of the day's calories protein may take.
 const PROTEIN_CAP_SHARE = 0.35;
 // ICMR-NIN 2020 RDA: extra energy and protein in the 2nd/3rd trimester and while
@@ -40,12 +42,15 @@ export const calculateTDEE = (weight, height, age, gender, activityLevel) =>
 
 /**
  * @param profile onboarding profile: weight, height, age, gender, activityLevel, goal,
- *                targetRate (kg/week), macroProfile, isPregnant, isBreastfeeding
+ *                targetRate (kg/week), macroProfile, isPregnant, isBreastfeeding, and
+ *                adaptive.tdee when a weekly check-in replaced the formula estimate
  */
 export const computeNutritionTargets = (profile) => {
     const goal = normaliseGoal(profile.goal);
     const weight = parseFloat(profile.weight) || 0;
-    const tdee = calculateTDEE(profile.weight, profile.height, profile.age, profile.gender, profile.activityLevel);
+    const formulaTdee = calculateTDEE(profile.weight, profile.height, profile.age, profile.gender, profile.activityLevel);
+    const adaptiveTdee = Math.round(parseFloat(profile.adaptive?.tdee) || 0);
+    const tdee = adaptiveTdee > 0 ? adaptiveTdee : formulaTdee;
     const macroProfile = MACRO_PROFILES[profile.macroProfile] ? profile.macroProfile : 'balanced';
     const macro = MACRO_PROFILES[macroProfile];
     const pregnant = profile.gender === 'female' && Boolean(profile.isPregnant);
@@ -62,7 +67,7 @@ export const computeNutritionTargets = (profile) => {
         const rate = parseFloat(profile.targetRate) || DEFAULT_RATE[effectiveGoal];
         const daily = rate * KCAL_PER_KG / 7;
         adjustment = effectiveGoal === 'cut'
-            ? -Math.round(Math.min(daily, tdee * 0.25))
+            ? -Math.round(Math.min(daily, tdee * 0.25, (weight * MAX_WEEKLY_LOSS_SHARE * KCAL_PER_KG) / 7))
             : Math.round(Math.min(daily, 500));
     }
     if (pregnant) adjustment += PREGNANCY.kcal;
@@ -90,6 +95,8 @@ export const computeNutritionTargets = (profile) => {
     return {
         bmr: Math.round(calculateBMR(profile.weight, profile.height, profile.age, profile.gender)),
         tdee,
+        formulaTdee,
+        tdeeSource: adaptiveTdee > 0 ? 'adaptive' : 'formula',
         goal: effectiveGoal,
         adjustment,
         targetCalories: Math.round(targetCalories),

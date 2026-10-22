@@ -9,7 +9,9 @@ NutriPlan is a full-stack web app that builds weekly Indian meal plans around yo
 - **Personalised**: diet (vegan to non-veg), allergies, disliked foods, cooking skill, region, budget, household size and batch cooking all change the plan. Diabetes, PCOS, blood pressure, thyroid, IBS and a few medications add warnings on the meals they affect.
 - **Targets**: Mifflin-St Jeor with your chosen weekly rate, a safe calorie floor, pregnancy/breastfeeding adjustments and macro profiles (balanced, high protein, low carb).
 - **Swaps**: swap any meal; the replacement is re-portioned to the same calories.
-- **Tracking**: meal compliance and streaks, weight chart and BMI, hydration. All of it is saved on the server, so it follows you across devices.
+- **Food logging by photo, text or voice**: snap your thali or type/speak "2 roti, 1 katori dal, thoda chawal" in English, Hindi or Hinglish. Google Gemini only recognises the dishes and portions; NutriPlan matches them to its food database and *calculates* the nutrition. A confirmation card lets you fix any dish or portion (katori, piece, bowl, glass, grams). Ticking a planned meal as eaten logs it too, and "Ate other" records what you ate instead.
+- **Adaptive targets**: a weekly check-in estimates your real maintenance calories from your food log and weight trend (energy balance, blended with the formula by how much data you have). Changes are capped at ±150 kcal a week, never below 1,200/1,500 kcal or faster than 1% body weight loss a week; accepting rebuilds the rest of the week's plan. The weight chart shows the smoothed trend.
+- **Tracking**: meal compliance and streaks, real intake from the food log, weight chart with trend and BMI, hydration. All of it is saved on the server, so it follows you across devices.
 - **Shopping list**: weekly quantities for your whole household grouped by aisle, with approximate ₹ costs, pantry mode and PDF/print/copy.
 - **Recipes**: browse and filter, favourite, and add your own recipes (with allergen tags).
 - **Auth**: email + password with captcha, 6-digit email verification and password reset; unverified accounts can't log in.
@@ -47,6 +49,11 @@ SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
 SMTP_USER="you@gmail.com"
 SMTP_PASS="your-app-password"
+# Food logging (free key from Google AI Studio)
+GEMINI_API_KEY="your-gemini-key"
+GEMINI_MODEL="gemini-3.1-flash-lite"
+# Optional: AI logs per user per day (default 60)
+GEMINI_DAILY_LIMIT="60"
 ```
 
 Create the database, load the food and recipe data, and start the API:
@@ -77,9 +84,10 @@ npm test
 ├── shared/targets.js        # Calorie/macro targets, used by browser and server
 ├── server/
 │   ├── index.js             # Express app
-│   ├── routes/              # auth, profile, meal-plan, recipes, tracking, favorites, user-data
-│   ├── engine/              # planner, nutrition, constraints, shopping (pure, tested)
-│   ├── data/                # foods.js (ingredients), recipes/ (192 recipes), ifct-foods.json
+│   ├── routes/              # auth, profile, meal-plan, recipes, tracking, favorites, user-data, logs, adaptive
+│   ├── services/            # gemini.js (dish recognition), foodLogs.js, recipes.js
+│   ├── engine/              # planner, nutrition, constraints, shopping, foodMatch, adaptive (pure, tested)
+│   ├── data/                # foods.js (ingredients), recipes/ (192 planned + 8 log-only recipes), ifct-foods.json
 │   ├── scripts/             # seed.js, extract-ifct.js
 │   └── prisma/schema.prisma
 └── src/                     # React app (pages, components, services)
@@ -104,9 +112,18 @@ npm test
 | `GET/POST` | `/api/hydration[/:date]` | Water intake |
 | `GET/POST/DELETE` | `/api/favorites[/:recipeId]` | Favourite recipes |
 | `GET/PUT` | `/api/user-data[/:key]` | Pantry, shopping ticks, streak badges |
+| `POST` | `/api/logs/parse` | Recognise dishes in `{ text }` or `{ image }` (Gemini) and match them to the food database |
+| `GET` | `/api/logs/search` | Search dishes and foods (`q`) |
+| `POST` | `/api/logs/resolve` | Nutrition for items and portions |
+| `GET/POST/DELETE` | `/api/logs[/:id]` | Food log (`from`, `to`); nutrition is recalculated on save |
+| `GET` | `/api/logs/summary` | Daily intake totals (`from`, `to`) |
+| `GET` | `/api/adaptive/check-in` | Weekly adaptive-target check-in (`today`) |
+| `POST` | `/api/adaptive/accept`, `/reset` | Use the new target (and replan the rest of the week), or go back to the formula |
+| `GET` | `/api/adaptive/history` | Past check-ins |
 
 ## 📊 Data Sources
 
+- Food logging: only the text or photo you log is sent to Google Gemini, never your name or email. Gemini's free tier may use inputs to improve Google's products, so don't log anything private.
 - Nutrient values: *Indian Food Composition Tables 2017*, ICMR-National Institute of Nutrition (Longvah et al.). Foods IFCT doesn't cover (curd, oats, sabudana, bread, ...) use USDA FoodData Central values; the source is recorded per food in `server/data/foods.js`.
 - Glycaemic index values and ingredient prices are estimates; the app says so where they are shown.
 - NutriPlan is for information only and is not medical advice.

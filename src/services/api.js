@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3000/api';
+// Set VITE_API_URL to use another API server (e.g. a test copy on another port).
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const handleResponse = async (response) => {
     if (!response.ok) {
@@ -200,6 +201,82 @@ export const api = {
             headers: getHeaders(),
             body: JSON.stringify({ value })
         });
+        return handleResponse(res);
+    },
+
+    // Food log. Gemini only identifies dishes and portions; the server calculates nutrition.
+    // input: { text } or { image } (a data URL)
+    parseFood: async (input) => {
+        const res = await fetch(`${API_URL}/logs/parse`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(input)
+        });
+        return handleResponse(res);
+    },
+
+    searchFoods: async (q) => {
+        const res = await fetch(`${API_URL}/logs/search?${new URLSearchParams({ q })}`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    // items: [{ kind, refId, quantity, unit }] -> nutrition for each and the total
+    resolveFoodItems: async (items) => {
+        const res = await fetch(`${API_URL}/logs/resolve`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ items })
+        });
+        return handleResponse(res);
+    },
+
+    saveFoodLog: async ({ date, slot, source, items, note }) => {
+        const res = await fetch(`${API_URL}/logs`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ date, slot, source, items, note })
+        });
+        return handleResponse(res);
+    },
+
+    getFoodLogs: async (from, to = from) => {
+        const res = await fetch(`${API_URL}/logs?${new URLSearchParams({ from, to })}`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    // { 'YYYY-MM-DD': { kcal, protein, carbs, fat, fibre, sugar, sodium, slots, entries } }
+    getFoodLogSummary: async (from, to = from) => {
+        const res = await fetch(`${API_URL}/logs/summary?${new URLSearchParams({ from, to })}`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    deleteFoodLog: async (id) => {
+        const res = await fetch(`${API_URL}/logs/${id}`, { method: 'DELETE', headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    // Adaptive targets (weekly check-in)
+    getCheckIn: async (today) => {
+        const res = await fetch(`${API_URL}/adaptive/check-in?${new URLSearchParams({ today })}`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    acceptCheckIn: async (today) => {
+        const res = await fetch(`${API_URL}/adaptive/accept`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ today })
+        });
+        return handleResponse(res);
+    },
+
+    resetAdaptiveTarget: async () => {
+        const res = await fetch(`${API_URL}/adaptive/reset`, { method: 'POST', headers: getHeaders() });
+        return handleResponse(res);
+    },
+
+    getCheckInHistory: async () => {
+        const res = await fetch(`${API_URL}/adaptive/history`, { headers: getHeaders() });
         return handleResponse(res);
     },
 

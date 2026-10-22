@@ -28,6 +28,9 @@ model User {
   favoriteRecipes FavoriteRecipe[]
   customRecipes   Recipe[]
   data            UserData[]
+  foodLogs        FoodLog[]
+  aiUsage         AiUsage[]
+  checkIns        CheckIn[]
 }
 
 model MealPlan {
@@ -182,4 +185,55 @@ model RecipeIngredient {
   food     Food   @relation(fields: [foodId], references: [id])
   grams    Float  // for the whole recipe
   position Int
+}
+
+// What the user actually ate. Nutrient totals are always computed on the server from
+// Recipe / Food rows; the AI only identifies dishes and portions.
+model FoodLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // YYYY-MM-DD (user's local date)
+  slot      String   // breakfast | lunch | snack | dinner
+  source    String   // plan | photo | text | manual
+  items     String   // JSON array: { kind, refId, name, quantity, unit, servings?, grams?, nutrition }
+  kcal      Float
+  protein   Float
+  carbs     Float
+  fat       Float
+  fibre     Float
+  sugar     Float
+  sodium    Float
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+// Gemini calls per user per day, for the free-tier quota.
+model AiUsage {
+  id     Int    @id @default(autoincrement())
+  userId Int
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   String // YYYY-MM-DD (UTC)
+  count  Int    @default(0)
+
+  @@unique([userId, date])
+}
+
+// Weekly adaptive-target check-ins (F2).
+model CheckIn {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         String   // YYYY-MM-DD
+  formulaTdee  Int
+  observedTdee Int?
+  appliedTdee  Int
+  oldTarget    Int
+  newTarget    Int
+  details      String   // JSON: the engine's full result
+  createdAt    DateTime @default(now())
+
+  @@index([userId, date])
 }

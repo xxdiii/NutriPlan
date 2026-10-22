@@ -1,8 +1,11 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
 
-const WeightChart = ({ weightLogs, targetWeight }) => {
+/**
+ * @param trend  [{ date: 'YYYY-MM-DD', trend }] smoothed weight from the weekly check-in
+ */
+const WeightChart = ({ weightLogs, targetWeight, trend = [] }) => {
   const { isDark } = useTheme();
 
   if (!weightLogs || weightLogs.length === 0) {
@@ -16,11 +19,14 @@ const WeightChart = ({ weightLogs, targetWeight }) => {
   }
 
   // Format data for chart
+  const trendByDate = new Map((trend || []).map(p => [p.date, p.trend]));
   const chartData = weightLogs.map(log => ({
     date: new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     weight: log.weight,
+    trend: trendByDate.get(new Date(log.date).toISOString().slice(0, 10)) ?? null,
     fullDate: log.date
   }));
+  const hasTrend = chartData.some(d => d.trend !== null);
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload }) => {
@@ -37,8 +43,13 @@ const WeightChart = ({ weightLogs, targetWeight }) => {
             })}
           </p>
           <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {payload[0].value} kg
+            {payload[0].payload.weight} kg
           </p>
+          {payload[0].payload.trend !== null && (
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Trend {payload[0].payload.trend.toFixed(1)} kg
+            </p>
+          )}
         </div>
       );
     }
@@ -80,14 +91,28 @@ const WeightChart = ({ weightLogs, targetWeight }) => {
             />
           )}
           
-          <Line 
-            type="monotone" 
-            dataKey="weight" 
-            stroke="#3B82F6" 
-            strokeWidth={3}
-            dot={{ fill: '#3B82F6', r: 4 }}
+          <Line
+            type="monotone"
+            dataKey="weight"
+            name="Weigh-ins"
+            stroke="#3B82F6"
+            strokeWidth={hasTrend ? 1 : 3}
+            strokeOpacity={hasTrend ? 0.5 : 1}
+            dot={{ fill: '#3B82F6', r: hasTrend ? 3 : 4 }}
             activeDot={{ r: 6 }}
           />
+          {hasTrend && (
+            <Line
+              type="monotone"
+              dataKey="trend"
+              name="Trend"
+              stroke="#10B981"
+              strokeWidth={3}
+              dot={false}
+              connectNulls
+            />
+          )}
+          {hasTrend && <Legend wrapperStyle={{ fontSize: '12px' }} />}
         </LineChart>
       </ResponsiveContainer>
     </div>

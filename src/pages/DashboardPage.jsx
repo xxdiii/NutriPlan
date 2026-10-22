@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight, Utensils } from 'lucide-react';
+import { User, Calendar, TrendingUp, Target, Flame, Award, ChevronRight, Utensils, Plus } from 'lucide-react';
 import { loadPlan, generatePlan, getCachedPlan } from '../services/mealPlanService';
 import { localDateString } from '../utils/dates';
 import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
-import { getComplianceForDate, getWeeklyMealBreakdown } from '../services/complianceService';
+import { getWeeklyMealBreakdown } from '../services/complianceService';
 import { api } from '../services/api';
 import HydrationTracker from '../components/dashboard/HydrationTracker';
 import NextMealCard from '../components/dashboard/NextMealCard';
 import StreakWidget from '../components/dashboard/StreakWidget';
+import FoodLogModal from '../components/logging/FoodLogModal';
+import TodayLogCard from '../components/logging/TodayLogCard';
+import CheckInBanner from '../components/progress/CheckInBanner';
+import { useFoodLog, toConsumedStats } from '../hooks/useFoodLog';
 
 const DashboardPage = ({ setCurrentPage }) => {
   const { isDark } = useTheme();
@@ -21,8 +25,18 @@ const DashboardPage = ({ setCurrentPage }) => {
   const [selectedMealType, setSelectedMealType] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mealBreakdown, setMealBreakdown] = useState({ breakfast: 0, lunch: 0, snack: 0, dinner: 0 });
-  const [consumedStats, setConsumedStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [complianceUpdateTrigger, setComplianceUpdateTrigger] = useState(0);
+  const [today] = useState(localDateString);
+  const [isLogOpen, setIsLogOpen] = useState(false);
+  const [logSlot, setLogSlot] = useState(null);
+  // Consumed = what is in the food log (planned meals ticked as eaten plus anything logged).
+  const { logs: todayLogs, totals: todayTotals } = useFoodLog(today);
+  const consumedStats = toConsumedStats(todayTotals);
+
+  const openFoodLog = (slot = null) => {
+    setLogSlot(slot);
+    setIsLogOpen(true);
+  };
 
   const handleViewRecipe = (recipe, mealType) => {
     setSelectedRecipe(recipe);
@@ -81,33 +95,6 @@ const DashboardPage = ({ setCurrentPage }) => {
     };
     loadData();
   }, [complianceUpdateTrigger]);
-
-  // Calculate consumed stats whenever meal plan or valid user profile loads
-  useEffect(() => {
-    if (!mealPlan || !mealPlan.plan) return;
-
-    // Get today's plan
-    const todayStr = localDateString();
-    const todaysPlan = mealPlan.plan.find(p => p.date === todayStr);
-
-    if (todaysPlan) {
-      const compliance = getComplianceForDate(todayStr);
-      let stats = { calories: 0, protein: 0, carbs: 0, fat: 0 };
-
-      ['breakfast', 'lunch', 'snack', 'dinner'].forEach(type => {
-        if (compliance.meals && compliance.meals[type] === 'eaten') {
-          const meal = todaysPlan[type];
-          if (meal) {
-            stats.calories += (meal.calories || 0);
-            stats.protein += (meal.protein || 0);
-            stats.carbs += (meal.carbs || 0);
-            stats.fat += (meal.fat || 0);
-          }
-        }
-      });
-      setConsumedStats(stats);
-    }
-  }, [mealPlan, complianceUpdateTrigger]);
 
   const handleGenerateMealPlan = async () => {
     setIsGenerating(true);
@@ -215,7 +202,8 @@ const DashboardPage = ({ setCurrentPage }) => {
       {/* Main Content */}
       <div className="container-page" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
         {/* Welcome Section */}
-        <div style={{ marginBottom: '2.5rem' }}>
+        <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
+          <div>
           <h1 style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 800,
@@ -233,7 +221,13 @@ const DashboardPage = ({ setCurrentPage }) => {
               margin: 0,
             }}>{formatDate(currentDate)}</p>
           </div>
+          </div>
+          <button onClick={() => openFoodLog()} className="btn btn--primary">
+            <Plus style={{ width: '1.1rem', height: '1.1rem' }} />Log food
+          </button>
         </div>
+
+        <CheckInBanner setCurrentPage={setCurrentPage} />
 
         {/* Quick Stats — top row: 4 fixed stat cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
@@ -437,6 +431,9 @@ const DashboardPage = ({ setCurrentPage }) => {
                 </button>
               </div>
             </div>
+            <div style={{ marginTop: '1rem' }}>
+              <TodayLogCard date={today} logs={todayLogs} onLogFood={openFoodLog} />
+            </div>
           </div>
 
           {/* ── SIDEBAR COLUMN — aligns to top, no blank stretch */}
@@ -542,6 +539,13 @@ const DashboardPage = ({ setCurrentPage }) => {
         mealType={selectedMealType}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+      <FoodLogModal
+        isOpen={isLogOpen}
+        onClose={() => setIsLogOpen(false)}
+        date={today}
+        slot={logSlot}
+        plannedDay={todaysMeals}
       />
       </div>
   );

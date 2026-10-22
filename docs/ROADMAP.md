@@ -143,6 +143,8 @@ Competitor cells are based on public information and reviews; check them before 
 
 #### F1 "Snap your thali" and Hinglish food logging (Gemini)
 
+> **Status: built** (see [PHASE1_PLAN.md](PHASE1_PLAN.md)), except the PWA part.
+
 **Why:** Manual logging is the top reason people quit. Photo logging is Healthify's flagship, and it's paid. NutriPlan can't log anything outside the plan today.
 
 **What the user gets:**
@@ -161,6 +163,8 @@ Competitor cells are based on public information and reviews; check them before 
 **Make it installable on a phone (PWA):** a manifest, a service worker, camera capture, and an offline view of today's plan.
 
 #### F2 Adaptive targets engine (an algorithm, no LLM)
+
+> **Status: built.** The weight change uses a least-squares line through the window's weigh-ins (the moving average lags with few weeks of data); the EMA trend is used for the chart and plateau detection. Check-ins run on demand when the user opens Progress or the Dashboard, at most one accepted per week.
 
 **Why:** This is MacroFactor's flagship, the landing page already claims it, and it's a strong algorithm to demonstrate in a portfolio.
 

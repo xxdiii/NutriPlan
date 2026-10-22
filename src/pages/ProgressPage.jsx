@@ -4,6 +4,8 @@ import { Utensils, Moon, Sun, User, ArrowLeft, TrendingUp, TrendingDown, Minus, 
 import WeightChart from '../components/progress/WeightChart';
 import WeightLogForm from '../components/progress/WeightLogForm';
 import BMITracker from '../components/progress/BMITracker';
+import WeeklyCheckIn from '../components/progress/WeeklyCheckIn';
+import { localDateString } from '../utils/dates';
 import {
   calculateProgress,
   calculateWeeklyAverage,
@@ -18,10 +20,15 @@ const ProgressPage = ({ setCurrentPage }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [weightLogs, setWeightLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [checkIn, setCheckIn] = useState(null);
   // Keeps the original onboarding weight so we can restore it if all logs are deleted
   const originalWeightRef = useRef(null);
 
+  // The weekly check-in depends on weigh-ins, so it reloads whenever they change.
+  const loadCheckIn = () => api.getCheckIn(localDateString()).then(setCheckIn).catch(() => setCheckIn(null));
+
   useEffect(() => {
+    loadCheckIn();
     const loadData = async () => {
       setIsLoading(true);
       try {
@@ -96,8 +103,10 @@ const ProgressPage = ({ setCurrentPage }) => {
       // Update current weight in user profile
       const updatedProfile = { ...userProfile, weight: log.weight };
       setUserProfile(updatedProfile);
-      await api.saveUserProfile(updatedProfile);
-      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+      const saved = await api.saveUserProfile(updatedProfile);
+      setUserProfile(saved);
+      localStorage.setItem('userProfile', JSON.stringify(saved));
+      loadCheckIn();
     } catch (error) {
       console.error('Error adding weight log:', error);
       alert('Failed to save weight log. Please try again.');
@@ -138,6 +147,7 @@ const ProgressPage = ({ setCurrentPage }) => {
         await api.saveUserProfile(updatedProfile);
         localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
       }
+      loadCheckIn();
     } catch (error) {
       console.error('Error deleting weight log:', error);
       alert('Failed to delete weight log. Please try again.');
@@ -332,6 +342,16 @@ const ProgressPage = ({ setCurrentPage }) => {
           )}
         </div>
 
+        <WeeklyCheckIn
+          checkIn={checkIn}
+          targets={userProfile.nutritionTargets}
+          onChanged={(profile) => {
+            setUserProfile(profile);
+            localStorage.setItem('userProfile', JSON.stringify(profile));
+            loadCheckIn();
+          }}
+        />
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Chart Section */}
@@ -343,6 +363,7 @@ const ProgressPage = ({ setCurrentPage }) => {
               </h2>
               <WeightChart
                 weightLogs={weightLogs}
+                trend={checkIn?.trend}
                 targetWeight={userProfile.goal !== 'maintain' ? userProfile.targetWeight : null}
               />
             </div>

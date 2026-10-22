@@ -8,7 +8,8 @@ import RecipeDetailModal from '../recipe/RecipeDetailModal';
 import MealSwapModal from './MealSwapModal';
 import ComplianceCard from '../compliance/ComplianceCard';
 import MealComplianceButton from '../compliance/MealComplianceButton';
-import { getComplianceForDate } from '../../services/complianceService';
+import FoodLogModal from '../logging/FoodLogModal';
+import { useFoodLog, toConsumedStats } from '../../hooks/useFoodLog';
 import { swapMeal } from '../../services/mealPlanService';
 import { localDateString } from '../../utils/dates';
 
@@ -35,33 +36,13 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
   const [mealToSwap, setMealToSwap] = useState(null);
   const [mealTypeToSwap, setMealTypeToSwap] = useState(null);
   const [complianceUpdate, setComplianceUpdate] = useState(0);
-  const [consumedStats, setConsumedStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
-
+  const [logSlot, setLogSlot] = useState(null);
   const currentDayPlan = localWeekPlan[selectedDay];
   // Ensure we rely on a proper date string if available, else a fallback
   const currentDate = currentDayPlan?.date || localDateString();
-
-  useEffect(() => {
-    if (!currentDayPlan) return;
-
-    const compliance = getComplianceForDate(currentDate);
-    let stats = { calories: 0, protein: 0, carbs: 0, fat: 0 };
-
-    ['breakfast', 'lunch', 'snack', 'dinner'].forEach(type => {
-      // Check if this meal is marked as 'eaten'
-      if (compliance.meals && compliance.meals[type] === 'eaten') {
-        const meal = currentDayPlan[type];
-        if (meal) {
-          stats.calories += (meal.calories || 0);
-          stats.protein += (meal.protein || 0);
-          stats.carbs += (meal.carbs || 0);
-          stats.fat += (meal.fat || 0);
-        }
-      }
-    });
-
-    setConsumedStats(stats);
-  }, [currentDayPlan, currentDate, complianceUpdate]);
+  // Consumed = the day's food log (planned meals ticked as eaten plus anything logged)
+  const consumedStats = toConsumedStats(useFoodLog(currentDate).totals);
+  const canLogDay = currentDate <= localDateString();
 
   const handleComplianceUpdate = () => {
     setComplianceUpdate(prev => prev + 1);
@@ -332,6 +313,7 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
               mealType="breakfast"
               mealName={currentDayPlan.breakfast.name}
               onUpdate={handleComplianceUpdate}
+              onAteOther={canLogDay ? setLogSlot : undefined}
             />
           )}
           {currentDayPlan?.lunch && (
@@ -340,6 +322,7 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
               mealType="lunch"
               mealName={currentDayPlan.lunch.name}
               onUpdate={handleComplianceUpdate}
+              onAteOther={canLogDay ? setLogSlot : undefined}
             />
           )}
           {currentDayPlan?.snack && (
@@ -348,6 +331,7 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
               mealType="snack"
               mealName={currentDayPlan.snack.name}
               onUpdate={handleComplianceUpdate}
+              onAteOther={canLogDay ? setLogSlot : undefined}
             />
           )}
           {currentDayPlan?.dinner && (
@@ -356,6 +340,7 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
               mealType="dinner"
               mealName={currentDayPlan.dinner.name}
               onUpdate={handleComplianceUpdate}
+              onAteOther={canLogDay ? setLogSlot : undefined}
             />
           )}
         </div>
@@ -364,6 +349,15 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
 
 
       {/* Recipe Detail Modal */}
+      <FoodLogModal
+        isOpen={Boolean(logSlot)}
+        onClose={() => setLogSlot(null)}
+        date={currentDate}
+        slot={logSlot}
+        plannedDay={currentDayPlan}
+        insteadOfPlan
+      />
+
       <RecipeDetailModal
         recipe={selectedRecipe}
         mealType={selectedMealType}

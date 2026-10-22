@@ -19,6 +19,8 @@ import AIDietAssistantPage from './pages/AIDietAssistantPage';
 import NutritionInsightsPage from './pages/NutritionInsightsPage';
 import PlanLibraryPage from './pages/PlanLibraryPage';
 
+const AUTH_PAGES = ['login', 'register', 'forgot-password'];
+
 // Inner component to handle routing with auth access
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -65,7 +67,11 @@ const AppRoutes = () => {
     if (user && currentPage === 'landing' && !savedPage) {
       setCurrentPage('dashboard');
     }
-  }, [user, currentPage]);
+    // Signed-in users have no use for the sign-in pages
+    if (!loading && user && AUTH_PAGES.includes(currentPage)) {
+      setCurrentPage('dashboard');
+    }
+  }, [user, loading, currentPage]);
 
   if (loading) {
     return (
@@ -109,10 +115,11 @@ const AppRoutes = () => {
   const renderPage = () => {
     // Public Routes
     if (currentPage === 'landing') return <LandingPage setCurrentPage={setCurrentPage} />;
-    if (currentPage === 'login') return user ? <DashboardPage setCurrentPage={setCurrentPage} /> : <LoginPage setCurrentPage={setCurrentPage} />;
-    if (currentPage === 'register') return user ? <DashboardPage setCurrentPage={setCurrentPage} /> : <RegisterPage setCurrentPage={setCurrentPage} />;
+    // Signed-in users on these pages get the dashboard (with navigation) below until the redirect lands
+    if (currentPage === 'login' && !user) return <LoginPage setCurrentPage={setCurrentPage} />;
+    if (currentPage === 'register' && !user) return <RegisterPage setCurrentPage={setCurrentPage} />;
     if (currentPage === 'verify-email') return <EmailVerificationPage setCurrentPage={setCurrentPage} />;
-    if (currentPage === 'forgot-password') return user ? <DashboardPage setCurrentPage={setCurrentPage} /> : <ForgotPasswordPage setCurrentPage={setCurrentPage} />;
+    if (currentPage === 'forgot-password' && !user) return <ForgotPasswordPage setCurrentPage={setCurrentPage} />;
 
     // Protected Routes
     if (!user) {

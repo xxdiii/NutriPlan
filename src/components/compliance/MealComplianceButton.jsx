@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, Shuffle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { markMealCompliance, getComplianceForDate } from '../../services/complianceService';
 
-const MealComplianceButton = ({ date, mealType, mealName, onUpdate }) => {
+/**
+ * Eaten / skipped buttons for a planned meal.
+ * @param onAteOther  optional: opens food logging for "I ate something else"
+ */
+const MealComplianceButton = ({ date, mealType, mealName, onUpdate, onAteOther }) => {
   const { isDark } = useTheme();
   const [status, setStatus] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -11,6 +15,12 @@ const MealComplianceButton = ({ date, mealType, mealName, onUpdate }) => {
   useEffect(() => {
     const compliance = getComplianceForDate(date);
     setStatus(compliance.meals[mealType]);
+    // Logging food "instead of" this meal changes its status from elsewhere.
+    const handleUpdate = (event) => {
+      if (event.detail?.date === date && event.detail?.mealType === mealType) setStatus(event.detail.status);
+    };
+    window.addEventListener('meal-compliance-update', handleUpdate);
+    return () => window.removeEventListener('meal-compliance-update', handleUpdate);
   }, [date, mealType]);
 
   const handleStatusChange = async (newStatus) => {
@@ -38,6 +48,8 @@ const MealComplianceButton = ({ date, mealType, mealName, onUpdate }) => {
         return `${baseClass} bg-emerald-600 text-white`;
       } else if (buttonStatus === 'skipped') {
         return `${baseClass} bg-red-600 text-white`;
+      } else if (buttonStatus === 'other') {
+        return `${baseClass} bg-amber-600 text-white`;
       }
     }
     
@@ -49,11 +61,11 @@ const MealComplianceButton = ({ date, mealType, mealName, onUpdate }) => {
   };
 
   return (
-    <div className="flex items-center space-x-2">
-      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+    <div className="flex flex-col gap-1.5 min-w-0">
+      <span className={`text-xs truncate ${isDark ? 'text-gray-400' : 'text-gray-600'}`} title={mealName}>
         {mealName}
       </span>
-      <div className="flex items-center space-x-1">
+      <div className="flex flex-wrap items-center gap-1">
         <button
           onClick={() => handleStatusChange('eaten')}
           disabled={isUpdating}
@@ -72,6 +84,17 @@ const MealComplianceButton = ({ date, mealType, mealName, onUpdate }) => {
           <X className="w-3 h-3" />
           <span>Skipped</span>
         </button>
+        {(onAteOther || status === 'other') && (
+          <button
+            onClick={() => onAteOther?.(mealType)}
+            disabled={isUpdating || !onAteOther}
+            className={getButtonClass('other')}
+            title="Log what you ate instead"
+          >
+            <Shuffle className="w-3 h-3" />
+            <span>Ate other</span>
+          </button>
+        )}
         {status && (
           <button
             onClick={() => handleStatusChange(null)}

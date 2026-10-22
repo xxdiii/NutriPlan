@@ -1,7 +1,9 @@
 // Meal compliance, weight logs and hydration.
+// Meal statuses: 'eaten', 'skipped', 'other' (ate something else, logged separately) or null.
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { authenticateToken, parseJson } from '../lib/auth.js';
+import { syncPlanLogs } from '../services/foodLogs.js';
 
 const router = Router();
 router.use(authenticateToken);
@@ -50,6 +52,8 @@ router.post('/compliance', async (req, res) => {
             update: { meals: value },
             create: { userId: req.user.id, date, meals: value }
         });
+        // A planned meal marked eaten becomes a food log entry ('other' = ate something else).
+        await syncPlanLogs(req.user.id, date, meals);
         res.json(JSON.parse(updated.meals));
     } catch (error) {
         res.status(500).json({ error: error.message });

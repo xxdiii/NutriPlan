@@ -66,11 +66,14 @@ export const markMealCompliance = (date, mealType, status) => {
     };
   }
 
-  complianceData[dateKey].meals[mealType] = status; // 'eaten', 'skipped', or null
+  // 'eaten', 'skipped', 'other' (ate something else, logged separately) or null
+  complianceData[dateKey].meals[mealType] = status;
   complianceData[dateKey].lastUpdated = new Date().toISOString();
 
   localStorage.setItem(key, JSON.stringify(complianceData));
+  // The server logs an eaten planned meal in the food log, so totals change once it has saved.
   api.updateCompliance(dateKey, complianceData[dateKey].meals)
+    .then(() => window.dispatchEvent(new CustomEvent('food-log-update', { detail: { date: dateKey } })))
     .catch(err => console.warn('Could not save meal tracking to the server:', err));
 
   // Dispatch event to notify other components (like Dashboard)
