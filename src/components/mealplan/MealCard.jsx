@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { Clock, ChefHat, Users, Flame, Target, TrendingUp, RefreshCw, ThumbsDown, AlertTriangle } from 'lucide-react';
+import { Clock, ChefHat, Users, Flame, Target, TrendingUp, RefreshCw, ThumbsDown } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import RecipeImage from '../common/RecipeImage';
-import { api } from '../../services/api';
-import { formatDuration } from '../../utils/dates';
-
-const formatCuisine = (cuisine = '') => cuisine.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
 const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
   const { isDark } = useTheme();
@@ -16,24 +11,21 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
     } catch { return false; }
   });
 
-  const handleDislike = async () => {
+  const handleDislike = () => {
     if (!meal) return;
+    // Persist dislike to localStorage profile
+    try {
+      const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      const dislikes = new Set(profile.dislikedRecipes || []);
+      dislikes.add(String(meal.id));
+      const updated = { ...profile, dislikedRecipes: [...dislikes] };
+      localStorage.setItem('userProfile', JSON.stringify(updated));
+      // Best-effort API save (non-blocking)
+      import('../../services/api').then(({ api }) => api.saveUserProfile(updated)).catch(() => {});
+    } catch (_) {}
     setDisliked(true);
     // Trigger swap immediately
     onSwap && onSwap(mealType);
-
-    // Save the dislike on top of the server profile (the cached copy may be missing,
-    // and saving a partial profile would wipe the rest of it).
-    try {
-      const profile = await api.getUserProfile();
-      if (!profile) return;
-      const dislikes = new Set((profile.dislikedRecipes || []).map(String));
-      dislikes.add(String(meal.recipeId || meal.id));
-      const updated = await api.saveUserProfile({ ...profile, dislikedRecipes: [...dislikes] });
-      localStorage.setItem('userProfile', JSON.stringify(updated));
-    } catch (error) {
-      console.warn('Could not save dislike', error);
-    }
   };
 
   if (!meal) {
@@ -71,37 +63,40 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
     <div className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
       }`}>
       {/* Image */}
-      <div className="relative h-48 overflow-hidden cursor-pointer bg-gray-200" onClick={() => onViewRecipe && onViewRecipe(meal, mealType)}>
-        <RecipeImage recipe={meal} className="w-full h-full transition-transform duration-300 hover:scale-110" emojiClassName="text-6xl" />
+      <div className="relative h-48 overflow-hidden cursor-pointer bg-gray-200" onClick={() => {
+        console.log('Image clicked', meal, mealType);
+        onViewRecipe && onViewRecipe(meal, mealType)
+      }}>
+        <img
+          src={meal.imageUrl || `https://via.placeholder.com/500x300?text=${meal.name.replace(/\s+/g, '+')}`}
+          alt={meal.name}
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = `https://via.placeholder.com/500x300?text=${meal.name.replace(/\s+/g, '+')}`;
+          }}
+        />
         <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-white font-semibold text-sm bg-gradient-to-r ${getMealTypeColor()}`}>
           {getMealTypeIcon()} {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
         </div>
         <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-medium ${isDark ? 'bg-gray-900/80 text-white' : 'bg-white/90 text-gray-900'
           }`}>
-          {formatCuisine(meal.cuisine)}
+          {meal.cuisine.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
         </div>
-        {meal.leftover && (
-          <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white">
-            Leftovers from yesterday's dinner
-          </div>
-        )}
       </div>
 
       {/* Content */}
       <div className="p-5">
-        <h3 className={`text-xl font-bold mb-1 cursor-pointer hover:text-emerald-600 transition-colors ${isDark ? 'text-white' : 'text-gray-900'}`} onClick={() => onViewRecipe && onViewRecipe(meal, mealType)}>
+        <h3 className={`text-xl font-bold mb-3 cursor-pointer hover:text-emerald-600 transition-colors ${isDark ? 'text-white' : 'text-gray-900'}`} onClick={() => onViewRecipe && onViewRecipe(meal, mealType)}>
           {meal.name}
         </h3>
-        {meal.portionLabel && (
-          <p className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{meal.portionLabel}</p>
-        )}
 
         {/* Quick Info */}
         <div className="flex flex-wrap gap-3 mb-4">
           <div className="flex items-center space-x-1">
             <Clock className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              {formatDuration(meal.prepTime + meal.cookTime)}
+              {meal.prepTime + meal.cookTime} min
             </span>
           </div>
           <div className="flex items-center space-x-1">
@@ -110,14 +105,12 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
               {meal.difficulty}
             </span>
           </div>
-          {meal.servings > 1 && (
-            <div className="flex items-center space-x-1" title="Ingredient quantities are for the whole household; nutrition is per person">
-              <Users className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Cook for {meal.servings}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center space-x-1">
+            <Users className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {meal.scaledServings || meal.servings} servings
+            </span>
+          </div>
         </div>
 
         {/* Nutrition Info */}
@@ -169,21 +162,9 @@ const MealCard = ({ meal, mealType, onSwap, onViewRecipe }) => {
           </div>
         </div>
 
-        {/* Health notes for this user's conditions and medications */}
-        {meal.warnings?.length > 0 && (
-          <div className={`mb-4 p-2 rounded-lg text-xs space-y-1 ${isDark ? 'bg-yellow-900/20 text-yellow-300 border border-yellow-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200'}`}>
-            {meal.warnings.map((warning, idx) => (
-              <div key={idx} className="flex items-start gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span>{warning.message}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {(meal.tags || []).slice(0, 3).map((tag, idx) => (
+          {meal.tags.slice(0, 3).map((tag, idx) => (
             <span
               key={idx}
               className={`text-xs px-2 py-1 rounded-full ${isDark

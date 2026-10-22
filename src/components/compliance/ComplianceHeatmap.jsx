@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getHeatmapData } from '../../services/complianceService';
-import { localDateString } from '../../utils/dates';
 
 // ── Constants ───────────────────────────────────────────────────────────────
 const MEAL_LABELS = ['breakfast', 'lunch', 'snack', 'dinner'];
@@ -211,7 +210,7 @@ const ComplianceHeatmap = ({ months = 3 }) => {
                   {/* Pad the first week if it doesn't start on Mon (safety) */}
                   {week.map((day, di) => {
                     const color = colors[Math.min(day.eaten, 4)];
-                    const isToday = day.date === localDateString();
+                    const isToday = day.date === new Date().toISOString().split('T')[0];
                     return (
                       <div
                         key={day.date}

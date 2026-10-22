@@ -9,24 +9,22 @@ import MealSwapModal from './MealSwapModal';
 import ComplianceCard from '../compliance/ComplianceCard';
 import MealComplianceButton from '../compliance/MealComplianceButton';
 import { getComplianceForDate } from '../../services/complianceService';
-import { swapMeal } from '../../services/mealPlanService';
-import { localDateString } from '../../utils/dates';
-
-// Index of today's date in the plan, default to 0
-const todayIndex = (weekPlan) => {
-  const index = (weekPlan || []).findIndex(day => day.date === localDateString());
-  return index >= 0 ? index : 0;
-};
 
 const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
   const { isDark } = useTheme();
-  const [selectedDay, setSelectedDay] = useState(() => todayIndex(weekPlan));
-  const [localWeekPlan, setLocalWeekPlan] = useState(weekPlan);
+  // Find index of today's date in the plan, default to 0
+  const getInitialDay = () => {
+    if (!weekPlan) return 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const index = weekPlan.findIndex(day => day.date === todayStr);
+    return index >= 0 ? index : 0;
+  };
 
-  // A regenerated plan replaces the local copy and jumps back to today.
+  const [selectedDay, setSelectedDay] = useState(getInitialDay());
+
+  // Update selected day if weekPlan changes (e.g. on new generation)
   useEffect(() => {
-    setLocalWeekPlan(weekPlan);
-    setSelectedDay(todayIndex(weekPlan));
+    setSelectedDay(getInitialDay());
   }, [weekPlan]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState(null);
@@ -34,12 +32,13 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const [mealToSwap, setMealToSwap] = useState(null);
   const [mealTypeToSwap, setMealTypeToSwap] = useState(null);
+  const [localWeekPlan, setLocalWeekPlan] = useState(weekPlan);
   const [complianceUpdate, setComplianceUpdate] = useState(0);
   const [consumedStats, setConsumedStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
 
   const currentDayPlan = localWeekPlan[selectedDay];
   // Ensure we rely on a proper date string if available, else a fallback
-  const currentDate = currentDayPlan?.date || localDateString();
+  const currentDate = currentDayPlan?.date || new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (!currentDayPlan) return;
@@ -67,6 +66,9 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
     setComplianceUpdate(prev => prev + 1);
   };
 
+  // Get user profile for swap filtering
+  const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
   const handleSwap = (mealType) => {
     const currentMeal = currentDayPlan[mealType];
     setMealToSwap(currentMeal);
@@ -74,11 +76,65 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
     setIsSwapModalOpen(true);
   };
 
-  // The server re-portions the new meal to the calories of the one it replaces
-  // and saves the plan, so swaps keep the day on target and survive a reload.
-  const handleSwapConfirm = async (newMeal) => {
-    const planDoc = await swapMeal(currentDate, mealTypeToSwap, newMeal.recipeId || newMeal.id);
-    setLocalWeekPlan(planDoc.plan);
+  const handleSwapConfirm = (newMeal) => {
+    // Update the meal plan
+    const updatedWeekPlan = [...localWeekPlan];
+
+    // Scale the new meal to match servings
+    const servings = userProfile.servings || 1;
+    // Recipe data is per-serving. Scale by user's desired servings.
+    const scale = servings;
+    const scaledMeal = {
+      ...newMeal,
+      calories: Math.round(newMeal.calories * scale),
+      protein: Math.round(newMeal.protein * scale),
+      carbs: Math.round(newMeal.carbs * scale),
+      fat: Math.round(newMeal.fat * scale),
+      scaledServings: servings
+    };
+
+    // Update the specific meal
+    updatedWeekPlan[selectedDay] = {
+      ...updatedWeekPlan[selectedDay],
+      [mealTypeToSwap]: scaledMeal
+    };
+
+    // Recalculate totals for the day
+    const dayMeals = updatedWeekPlan[selectedDay];
+    updatedWeekPlan[selectedDay].totalCalories =
+      (dayMeals.breakfast?.calories || 0) +
+      (dayMeals.lunch?.calories || 0) +
+      (dayMeals.snack?.calories || 0) +
+      (dayMeals.dinner?.calories || 0);
+
+    updatedWeekPlan[selectedDay].totalProtein =
+      (dayMeals.breakfast?.protein || 0) +
+      (dayMeals.lunch?.protein || 0) +
+      (dayMeals.snack?.protein || 0) +
+      (dayMeals.dinner?.protein || 0);
+
+    updatedWeekPlan[selectedDay].totalCarbs =
+      (dayMeals.breakfast?.carbs || 0) +
+      (dayMeals.lunch?.carbs || 0) +
+      (dayMeals.snack?.carbs || 0) +
+      (dayMeals.dinner?.carbs || 0);
+
+    updatedWeekPlan[selectedDay].totalFat =
+      (dayMeals.breakfast?.fat || 0) +
+      (dayMeals.lunch?.fat || 0) +
+      (dayMeals.snack?.fat || 0) +
+      (dayMeals.dinner?.fat || 0);
+
+    // Update state
+    setLocalWeekPlan(updatedWeekPlan);
+
+    // Update localStorage
+    const savedPlan = JSON.parse(localStorage.getItem('weeklyMealPlan'));
+    savedPlan.plan = updatedWeekPlan;
+    localStorage.setItem('weeklyMealPlan', JSON.stringify(savedPlan));
+
+    // Modal will callback onClose after animation
+    // setIsSwapModalOpen(false);
   };
 
   const handleViewRecipe = (recipe, mealType) => {
@@ -100,7 +156,6 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
   };
 
   const handleExport = () => {
-    const weekPlan = localWeekPlan;
     if (!weekPlan || weekPlan.length === 0) return;
 
     const doc = new jsPDF();
@@ -159,7 +214,7 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
 
           doc.setFontSize(9);
           doc.setTextColor(80);
-          doc.text(`${meal.portionLabel ? `${meal.portionLabel} | ` : ''}${meal.calories} cal | P:${meal.protein}g C:${meal.carbs}g F:${meal.fat}g`, 50, yPos);
+          doc.text(`${meal.calories} cal | P:${meal.protein}g C:${meal.carbs}g F:${meal.fat}g`, 50, yPos);
           yPos += 8;
         }
       });
@@ -167,7 +222,7 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
       yPos += 10; // Extra spacing between days
     });
 
-    doc.save(`meal-plan-${localDateString()}.pdf`);
+    doc.save(`meal-plan-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handleShare = () => {
@@ -271,7 +326,7 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
             <span className={`block text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
               {consumedStats.protein}g
             </span>
-            <span className={`text-xs uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Protein</span>
+            <span className={`text-xs uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Multi</span>
           </div>
           <div className="text-center px-4 border-r border-gray-200 dark:border-gray-700 last:border-0">
             <span className={`block text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
@@ -377,8 +432,8 @@ const MealPlanView = ({ weekPlan, onRegeneratePlan, setCurrentPage }) => {
         onClose={handleCloseSwapModal}
         currentMeal={mealToSwap}
         mealType={mealTypeToSwap}
-        date={currentDate}
         onSwap={handleSwapConfirm}
+        userProfile={userProfile}
       />
     </div>
   );

@@ -1,5 +1,5 @@
-// Prisma schema (SQLite for local development).
-// JSON values are stored as strings because SQLite has no native JSON column.
+// This is your Prisma schema file for PostgreSQL (for Deployment)
+// Use this instead of schema.prisma when deploying to Render/Railway/Heroku
 
 generator client {
   provider = "prisma-client-js"
@@ -11,23 +11,21 @@ datasource db {
 }
 
 model User {
-  id                Int      @id @default(autoincrement())
-  email             String   @unique
-  password          String
-  name              String?
-  profile           String   // JSON string of the user profile
-  isVerified        Boolean  @default(false)
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  profile   String   // JSON string of the user profile
+  isVerified Boolean @default(false)
   verificationToken String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  mealPlans       MealPlan[]
-  compliance      Compliance[]
-  weightLogs      WeightLog[]
-  hydrationLogs   HydrationLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  mealPlans  MealPlan[]
+  compliance Compliance[]
+  weightLogs WeightLog[]
+  hydrationLogs HydrationLog[]
   favoriteRecipes FavoriteRecipe[]
-  customRecipes   Recipe[]
-  data            UserData[]
 }
 
 model MealPlan {
@@ -36,18 +34,17 @@ model MealPlan {
   user      User     @relation(fields: [userId], references: [id])
   startDate DateTime
   endDate   DateTime
-  version   Int      @default(1) // planner version that generated it
   planData  String   // JSON string of the plan
   createdAt DateTime @default(now())
 }
 
 model Compliance {
-  id     Int    @id @default(autoincrement())
-  userId Int
-  user   User   @relation(fields: [userId], references: [id])
-  date   String // Storing as YYYY-MM-DD string for easy matching
-  meals  String // JSON string of meal status
-
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  date      String   // Storing as YYYY-MM-DD string for easy matching
+  meals     String   // JSON string of meal status
+  
   @@unique([userId, date])
 }
 
@@ -79,107 +76,4 @@ model FavoriteRecipe {
   createdAt DateTime @default(now())
 
   @@unique([userId, recipeId])
-}
-
-// Small per-user documents that used to live only in the browser
-// (pantry, ticked shopping items, streak badges, chosen plan archetype).
-model UserData {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  key       String
-  value     String   // JSON string
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, key])
-}
-
-// Ingredient catalogue. Nutrients are per 100 g edible portion (IFCT 2017 where available).
-model Food {
-  id        String  @id // catalogue key, e.g. "toor_dal"
-  name      String
-  source    String  // "IFCT 2017 B021", "USDA FDC 171284", ...
-  foodGroup String
-  kcal      Float
-  protein   Float
-  carbs     Float   // available carbohydrate
-  fat       Float
-  fibre     Float
-  sugar     Float
-  sodium    Float   // mg
-  iron      Float   // mg
-  calcium   Float   // mg
-  vitC      Float   // mg
-  folate    Float   // µg
-  gi        Float?
-  priceInr  Float?  // ₹ per kg
-  allergens String  // JSON array
-  flags     String  // JSON array
-  animal    String?
-  unitName  String?
-  unitGrams Float?
-
-  recipeIngredients RecipeIngredient[]
-}
-
-// Curated recipes (ownerId null) and users' own recipes.
-// Curated nutrition is computed from the ingredients; custom recipes may be typed in.
-model Recipe {
-  id            String   @id
-  ownerId       Int?
-  owner         User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  source        String   @default("curated") // "curated" | "custom"
-  name          String
-  course        String   // staple | main | complete | breakfast | snack
-  cuisine       String
-  meals         String   // JSON array of meal slots
-  regions       String   // JSON array of Indian states
-  pairs         String   // JSON array of staple groups (mains)
-  stapleGroup   String?
-  servings      Int
-  servingUnit   String
-  prepTime      Int
-  cookTime      Int
-  difficulty    String
-  tags          String   // JSON array
-  instructions  String   // JSON array
-  batchFriendly Boolean  @default(false)
-  imageUrl      String?
-
-  // Per-serving values
-  kcal          Float
-  protein       Float
-  carbs         Float
-  fat           Float
-  fibre         Float
-  sugar         Float
-  sodium        Float
-  iron          Float
-  calcium       Float
-  vitC          Float
-  folate        Float
-  glycaemicLoad Float
-  costInr       Float
-  allergens     String   // JSON array
-  dietCategory  String   // vegan | vegetarian | eggetarian | pescatarian | non_veg
-  flags         String   // JSON object: jainSafe, vratSafe, noOnionGarlic, ...
-  customIngredients String? // JSON array of display strings (custom recipes only)
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  ingredients   RecipeIngredient[]
-
-  @@index([course])
-  @@index([ownerId])
-}
-
-model RecipeIngredient {
-  id       Int    @id @default(autoincrement())
-  recipeId String
-  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  foodId   String
-  food     Food   @relation(fields: [foodId], references: [id])
-  grams    Float  // for the whole recipe
-  position Int
 }

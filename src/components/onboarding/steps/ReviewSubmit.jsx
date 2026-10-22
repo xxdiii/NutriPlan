@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Check, Edit, User, Heart, Target, Leaf, DollarSign, Calculator, TrendingUp, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { computeNutritionTargets } from '../../../../shared/targets';
+import { calculateTDEE, calculateTargetCalories } from '../../../utils/calculations/tdee';
+import { calculateMacros } from '../../../utils/calculations/macros';
 import { ACTIVITY_LEVELS, GOALS, HEALTH_CONDITIONS, ALLERGENS, DIETARY_PREFERENCES, CUISINES, BUDGET_RANGES } from '../../../utils/constants';
 import { api } from '../../../services/api';
 
@@ -10,9 +11,17 @@ const ReviewSubmit = ({ formData, setCurrentStep, onComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Calculate nutritional targets (the server recalculates the same way on save)
-  const nutritionTargets = computeNutritionTargets(formData);
-  const { tdee, targetCalories, macros } = nutritionTargets;
+  // Calculate nutritional targets
+  const tdee = calculateTDEE(
+    formData.weight,
+    formData.height,
+    formData.age,
+    formData.gender,
+    formData.activityLevel
+  );
+
+  const targetCalories = calculateTargetCalories(tdee, formData.goal);
+  const macros = calculateMacros(targetCalories, formData.goal, formData.dietaryPreference);
 
   // Get display labels
   const getActivityLabel = () => {
@@ -60,15 +69,19 @@ const ReviewSubmit = ({ formData, setCurrentStep, onComplete }) => {
       // Prepare profile data with calculated nutrition targets
       const profileData = {
         ...formData,
-        nutritionTargets,
+        nutritionTargets: {
+          tdee,
+          targetCalories,
+          macros
+        },
         createdAt: new Date().toISOString()
       };
 
       // Save to backend API
-      const saved = await api.saveUserProfile(profileData);
+      await api.saveUserProfile(profileData);
 
       // Also store in localStorage as a cache
-      localStorage.setItem('userProfile', JSON.stringify(saved));
+      localStorage.setItem('userProfile', JSON.stringify(profileData));
 
       setIsSubmitting(false);
       setShowSuccess(true);

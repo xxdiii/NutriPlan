@@ -3,56 +3,68 @@ import { useTheme } from '../context/ThemeContext';
 import { Search, Filter, Clock, Users, Flame, ChevronRight, ArrowLeft, Loader2, Plus, ChefHat, Trash2 } from 'lucide-react';
 import RecipeDetailModal from '../components/recipe/RecipeDetailModal';
 import CustomRecipeForm from '../components/recipe/CustomRecipeForm';
-import { deleteCustomRecipe } from '../services/customRecipeService';
-import { api } from '../services/api';
-import { CUISINES } from '../utils/constants';
-import RecipeImage from '../components/common/RecipeImage';
-import { formatDuration } from '../utils/dates';
-
-const PAGE_SIZE = 24;
-// Diets each filter option allows, least to most permissive (matches the server).
-const DIET_FILTERS = {
-    vegan: ['vegan'],
-    vegetarian: ['vegan', 'vegetarian'],
-    eggetarian: ['vegan', 'vegetarian', 'eggetarian'],
-};
-const DIET_LABELS = { vegan: 'Vegan', vegetarian: 'Vegetarian', eggetarian: 'Egg', pescatarian: 'Fish', non_veg: 'Non-veg' };
+import { loadCustomRecipes, deleteCustomRecipe } from '../services/customRecipeService';
+import breakfastRecipes from '../data/recipes/breakfast.json';
+import lunchRecipes from '../data/recipes/lunch.json';
+import dinnerRecipes from '../data/recipes/dinner.json';
+import snackRecipes from '../data/recipes/snacks.json';
 
 const RecipePage = ({ setCurrentPage }) => {
     const { isDark } = useTheme();
-    const [allRecipes, setAllRecipes] = useState([]);
+    const [recipes, setRecipes] = useState([]);
+    const [customRecipes, setCustomRecipes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMealType, setSelectedMealType] = useState('all');
     const [selectedDiet, setSelectedDiet] = useState('all');
-    const [selectedCuisine, setSelectedCuisine] = useState('all');
     const [showCustomOnly, setShowCustomOnly] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingRecipe, setEditingRecipe] = useState(null);
 
     const [selectedRecipe, setSelectedRecipe] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+    
+    const [displayCount, setDisplayCount] = useState(24);
     const [isLoading, setIsLoading] = useState(true);
-    const [loadError, setLoadError] = useState('');
 
-    // The whole catalogue is a few hundred recipes, so it is loaded once and filtered here.
-    // The server lists the user's own recipes first.
-    const loadRecipes = useCallback(async () => {
-        try {
-            const { items } = await api.getRecipes({ limit: 500 });
-            setAllRecipes(items);
-            setLoadError('');
-        } catch (error) {
-            setLoadError(error.message || 'Could not load recipes.');
-        } finally {
+    // Combine all built-in recipes with meal type tag
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const rawRecipes = [
+                ...breakfastRecipes.map(r => ({ ...r, mealType: 'breakfast' })),
+                ...lunchRecipes.map(r => ({ ...r, mealType: 'lunch' })),
+                ...dinnerRecipes.map(r => ({ ...r, mealType: 'dinner' })),
+                ...snackRecipes.map(r => ({ ...r, mealType: 'snack' }))
+            ];
+
+            const uniqueRecipesMap = new Map();
+            rawRecipes.forEach(recipe => {
+                const normalizedName = recipe.name.replace(/\s+\d+$/, '').trim();
+                if (!uniqueRecipesMap.has(normalizedName)) {
+                    uniqueRecipesMap.set(normalizedName, { ...recipe, name: normalizedName });
+                }
+            });
+
+            setRecipes(Array.from(uniqueRecipesMap.values()));
             setIsLoading(false);
-        }
+        }, 100);
+        return () => clearTimeout(timer);
     }, []);
 
-    useEffect(() => { loadRecipes(); }, [loadRecipes]);
+    // Load & refresh custom recipes
+    const refreshCustomRecipes = useCallback(() => {
+        const custom = loadCustomRecipes().map(r => ({
+            ...r,
+            // custom recipes can belong to multiple meal types; use first for display
+            mealType: r.mealTypes?.[0] ?? 'snack',
+            isCustom: true,
+        }));
+        setCustomRecipes(custom);
+    }, []);
 
-    const customRecipes = useMemo(() => allRecipes.filter(r => r.isCustom), [allRecipes]);
+    useEffect(() => { refreshCustomRecipes(); }, [refreshCustomRecipes]);
+
+    // All recipes: custom first (with badge), then built-in
+    const allRecipes = useMemo(() => [...customRecipes, ...recipes], [customRecipes, recipes]);
 
     // Filter logic using useMemo
     const filteredRecipes = useMemo(() => {
@@ -68,22 +80,24 @@ const RecipePage = ({ setCurrentPage }) => {
         }
 
         if (selectedMealType !== 'all') {
-            result = result.filter(recipe => (recipe.meals || []).includes(selectedMealType));
+            result = result.filter(recipe => recipe.mealType === selectedMealType);
         }
 
         if (selectedDiet !== 'all') {
-            result = result.filter(recipe => DIET_FILTERS[selectedDiet].includes(recipe.dietCategory));
-        }
-
-        if (selectedCuisine !== 'all') {
-            result = result.filter(recipe => recipe.cuisine === selectedCuisine);
+            if (selectedDiet === 'vegan') {
+                result = result.filter(recipe => recipe.dietaryType.includes('vegan'));
+            } else if (selectedDiet === 'vegetarian') {
+                result = result.filter(recipe => recipe.dietaryType.includes('vegetarian') || recipe.dietaryType.includes('vegan'));
+            }
         }
 
         return result;
-    }, [searchQuery, selectedMealType, selectedDiet, selectedCuisine, showCustomOnly, allRecipes, customRecipes]);
+    }, [searchQuery, selectedMealType, selectedDiet, recipes]);
 
     // Reset display count when filters change
-    const resetPaging = () => setDisplayCount(PAGE_SIZE);
+    useEffect(() => {
+        setDisplayCount(24);
+    }, [searchQuery, selectedMealType, selectedDiet]);
 
     // Intersection Observer for infinite scrolling
     const observer = useRef();
@@ -92,7 +106,7 @@ const RecipePage = ({ setCurrentPage }) => {
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting && displayCount < filteredRecipes.length) {
-                setDisplayCount(prev => prev + PAGE_SIZE);
+                setDisplayCount(prev => prev + 24);
             }
         });
         if (node) observer.current.observe(node);
@@ -111,20 +125,16 @@ const RecipePage = ({ setCurrentPage }) => {
         { id: 'snack', label: 'Snacks', emoji: '🍎' }
     ];
 
-    const handleDeleteCustom = async (e, recipeId) => {
+    const handleDeleteCustom = (e, recipeId) => {
         e.stopPropagation();
         if (window.confirm('Delete this custom recipe?')) {
-            try {
-                await deleteCustomRecipe(recipeId);
-                loadRecipes();
-            } catch (error) {
-                alert(error.message || 'Could not delete the recipe.');
-            }
+            deleteCustomRecipe(recipeId);
+            refreshCustomRecipes();
         }
     };
 
     const handleSaveRecipe = () => {
-        loadRecipes();
+        refreshCustomRecipes();
         setShowAddForm(false);
         setEditingRecipe(null);
     };
@@ -172,7 +182,7 @@ const RecipePage = ({ setCurrentPage }) => {
                                 type="text"
                                 placeholder="Search recipes, ingredients, tags..."
                                 value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); resetPaging(); }}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className={`w-full pl-10 pr-4 py-3 rounded-xl transition-all ${isDark
                                         ? 'bg-gray-800 border-gray-700 focus:bg-gray-700 text-white placeholder-gray-500'
                                         : 'bg-white border-gray-200 focus:bg-gray-50 text-gray-900 placeholder-gray-400 border'
@@ -182,8 +192,7 @@ const RecipePage = ({ setCurrentPage }) => {
 
                         <select
                             value={selectedDiet}
-                            onChange={(e) => { setSelectedDiet(e.target.value); resetPaging(); }}
-                            aria-label="Diet"
+                            onChange={(e) => setSelectedDiet(e.target.value)}
                             className={`px-4 py-3 rounded-xl border appearance-none cursor-pointer ${isDark
                                     ? 'bg-gray-800 border-gray-700 text-white'
                                     : 'bg-white border-gray-200 text-gray-900'
@@ -192,22 +201,6 @@ const RecipePage = ({ setCurrentPage }) => {
                             <option value="all">All Diets</option>
                             <option value="vegetarian">Vegetarian</option>
                             <option value="vegan">Vegan</option>
-                            <option value="eggetarian">Vegetarian + Egg</option>
-                        </select>
-
-                        <select
-                            value={selectedCuisine}
-                            onChange={(e) => { setSelectedCuisine(e.target.value); resetPaging(); }}
-                            aria-label="Cuisine"
-                            className={`px-4 py-3 rounded-xl border appearance-none cursor-pointer ${isDark
-                                    ? 'bg-gray-800 border-gray-700 text-white'
-                                    : 'bg-white border-gray-200 text-gray-900'
-                                }`}
-                        >
-                            <option value="all">All Cuisines</option>
-                            {CUISINES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            <option value="goan">Goan</option>
-                            <option value="odia">Odia</option>
                         </select>
                     </div>
 
@@ -216,7 +209,7 @@ const RecipePage = ({ setCurrentPage }) => {
                         {categories.map(cat => (
                             <button
                                 key={cat.id}
-                                onClick={() => { setSelectedMealType(cat.id); setShowCustomOnly(false); resetPaging(); }}
+                                onClick={() => { setSelectedMealType(cat.id); setShowCustomOnly(false); }}
                                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                                     selectedMealType === cat.id && !showCustomOnly
                                         ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
@@ -231,7 +224,7 @@ const RecipePage = ({ setCurrentPage }) => {
                         ))}
                         {/* My Recipes tab */}
                         <button
-                            onClick={() => { setShowCustomOnly(true); resetPaging(); }}
+                            onClick={() => setShowCustomOnly(true)}
                             className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                                 showCustomOnly
                                     ? 'bg-amber-500 text-white shadow-lg shadow-amber-600/20'
@@ -255,11 +248,6 @@ const RecipePage = ({ setCurrentPage }) => {
 
             {/* Recipe Grid */}
             <div className="max-w-7xl mx-auto px-4 py-6">
-                {loadError && (
-                    <div className={`mb-6 p-4 rounded-xl text-sm ${isDark ? 'bg-red-900/30 text-red-300' : 'bg-red-50 text-red-700'}`}>
-                        {loadError}
-                    </div>
-                )}
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20">
                         <Loader2 className={`w-12 h-12 animate-spin mb-4 ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`} />
@@ -282,7 +270,13 @@ const RecipePage = ({ setCurrentPage }) => {
                                         }`}
                                     >
                                         <div className="relative h-48 overflow-hidden">
-                                            <RecipeImage recipe={recipe} className="w-full h-full transition-transform duration-500 group-hover:scale-110" />
+                                            <img
+                                                src={recipe.imageUrl || 'https://via.placeholder.com/400x300?text=Recipe'}
+                                                alt={recipe.name}
+                                                loading="lazy"
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                onError={e => { e.target.src = 'https://via.placeholder.com/400x300?text=Recipe'; }}
+                                            />
                                             {/* Cuisine / Custom badge */}
                                             <div className="absolute top-3 left-3 flex gap-1.5">
                                                 {recipe.isCustom ? (
@@ -293,7 +287,7 @@ const RecipePage = ({ setCurrentPage }) => {
                                                     <span className={`px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${
                                                         isDark ? 'bg-black/60 text-white backdrop-blur-sm' : 'bg-white/90 text-gray-900 shadow-sm'
                                                     }`}>
-                                                        {(recipe.cuisine || '').replace(/_/g, ' ')}
+                                                        {(recipe.cuisine || '').replace('_', ' ')}
                                                     </span>
                                                 )}
                                             </div>
@@ -319,7 +313,7 @@ const RecipePage = ({ setCurrentPage }) => {
                                             <div className="flex items-center space-x-4 mb-4 text-sm">
                                                 <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{formatDuration(recipe.prepTime + recipe.cookTime)}</span>
+                                                    <span>{recipe.prepTime + recipe.cookTime}m</span>
                                                 </div>
                                                 <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                                     <Flame className="w-4 h-4" />
@@ -328,17 +322,15 @@ const RecipePage = ({ setCurrentPage }) => {
                                             </div>
 
                                             <div className="flex flex-wrap gap-2">
-                                                {[DIET_LABELS[recipe.dietCategory], recipe.flags?.jainSafe && 'Jain', recipe.flags?.vratSafe && 'Vrat']
-                                                    .filter(Boolean)
-                                                    .map(tag => (
-                                                        <span
-                                                            key={tag}
-                                                            className={`text-xs px-2 py-1 rounded-md ${isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
-                                                                }`}
-                                                        >
-                                                            {tag}
-                                                        </span>
-                                                    ))}
+                                                {recipe.dietaryType.slice(0, 2).map((tag, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className={`text-xs px-2 py-1 rounded-md ${isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
+                                                            }`}
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
                                             </div>
                                         </div>
                                     </div>
@@ -374,7 +366,7 @@ const RecipePage = ({ setCurrentPage }) => {
                     setIsModalOpen(false);
                     setSelectedRecipe(null);
                 }}
-                mealType={selectedRecipe?.meals?.[0] || 'snack'}
+                mealType={selectedRecipe?.mealType || 'snack'}
             />
 
             {/* Custom Recipe Form Modal */}

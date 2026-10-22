@@ -130,87 +130,16 @@ export const api = {
         }
     },
 
-    // Generates and saves a new weekly plan on the server.
-    generateMealPlan: async ({ startDate, seed } = {}) => {
-        const res = await fetch(`${API_URL}/meal-plan/generate`, {
+    saveMealPlan: async (planData) => {
+        const res = await fetch(`${API_URL}/meal-plan`, {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ startDate, seed })
-        });
-        return handleResponse(res);
-    },
-
-    getMealAlternatives: async (date, slot) => {
-        const params = new URLSearchParams({ date, slot });
-        const res = await fetch(`${API_URL}/meal-plan/alternatives?${params}`, { headers: getHeaders() });
-        return handleResponse(res);
-    },
-
-    swapMeal: async (date, slot, recipeId) => {
-        const res = await fetch(`${API_URL}/meal-plan/swap`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ date, slot, recipeId })
-        });
-        return handleResponse(res);
-    },
-
-    getShoppingList: async () => {
-        const res = await fetch(`${API_URL}/meal-plan/shopping-list`, { headers: getHeaders() });
-        return handleResponse(res);
-    },
-
-    // Recipes
-    getRecipes: async (filters = {}) => {
-        const params = new URLSearchParams(
-            Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== '')
-        );
-        const res = await fetch(`${API_URL}/recipes?${params}`, { headers: getHeaders() });
-        return handleResponse(res);
-    },
-
-    getCustomRecipes: async () => {
-        const res = await fetch(`${API_URL}/recipes/custom`, { headers: getHeaders() });
-        return handleResponse(res);
-    },
-
-    saveCustomRecipe: async (recipe, id = null) => {
-        const res = await fetch(`${API_URL}/recipes/custom${id ? `/${id}` : ''}`, {
-            method: id ? 'PUT' : 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(recipe)
-        });
-        return handleResponse(res);
-    },
-
-    deleteCustomRecipe: async (id) => {
-        const res = await fetch(`${API_URL}/recipes/custom/${id}`, { method: 'DELETE', headers: getHeaders() });
-        return handleResponse(res);
-    },
-
-    // Per-user data synced from the browser (pantry, shopping ticks, streak badges)
-    getUserData: async () => {
-        const res = await fetch(`${API_URL}/user-data`, { headers: getHeaders() });
-        return handleResponse(res);
-    },
-
-    putUserData: async (key, value) => {
-        const res = await fetch(`${API_URL}/user-data/${key}`, {
-            method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify({ value })
+            body: JSON.stringify(planData)
         });
         return handleResponse(res);
     },
 
     // Compliance
-    // All records in a range, keyed by date: { 'YYYY-MM-DD': { meals, date } }
-    getComplianceRange: async (from, to) => {
-        const params = new URLSearchParams(Object.entries({ from, to }).filter(([, v]) => v));
-        const res = await fetch(`${API_URL}/compliance?${params}`, { headers: getHeaders() });
-        return handleResponse(res);
-    },
-
     getCompliance: async (date) => {
         // date should be YYYY-MM-DD
         const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
