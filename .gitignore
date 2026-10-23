@@ -39,6 +39,7 @@ skills-lock.json
 
 # Local notes
 version_check.txt
+docs/
 
 # Debug output and scratch files
 *.log

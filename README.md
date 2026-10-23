@@ -140,10 +140,6 @@ npm test
 - Glycaemic index values are estimates; the app says so where they are shown.
 - NutriPlan is for information only and is not medical advice.
 
-## 🗺️ Roadmap
-
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the research behind the next features (food logging by photo, adaptive calorie targets, household mode, fasting calendar, ₹ budget planning, AI coach).
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
