@@ -112,6 +112,8 @@ const LoginPage = ({ setCurrentPage }) => {
   const [captchaText, setCaptchaText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Password reset needs email; servers can turn email off.
+  const [emailEnabled, setEmailEnabled] = useState(true);
 
   const loadCaptcha = async () => {
     try {
@@ -126,6 +128,7 @@ const LoginPage = ({ setCurrentPage }) => {
 
   useEffect(() => {
     loadCaptcha();
+    api.getAuthConfig().then(config => setEmailEnabled(config.emailVerification)).catch(() => {});
   }, []);
 
   const Card = isDark ? InsightCardDark : InsightCard;
@@ -444,7 +447,7 @@ const LoginPage = ({ setCurrentPage }) => {
                     fontSize: 'var(--text-sm)', color: isDark ? 'oklch(72% 0.02 152)' : 'oklch(42% 0.025 152)',
                     letterSpacing: '0.01em',
                   }}>Password</label>
-                  <button
+                  {emailEnabled && <button
                     type="button"
                     onClick={() => setCurrentPage('forgot-password')}
                     style={{
@@ -455,7 +458,7 @@ const LoginPage = ({ setCurrentPage }) => {
                     }}
                   >
                     Forgot password?
-                  </button>
+                  </button>}
                 </div>
                 <input
                   id="login-password" type="password" value={password}

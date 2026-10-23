@@ -1,12 +1,12 @@
-// Prisma schema (SQLite for local development).
-// JSON values are stored as strings because SQLite has no native JSON column.
+// Prisma schema (PostgreSQL: Neon in production, any Postgres locally).
+// JSON values are stored as strings, as they were when the app used SQLite.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

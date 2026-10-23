@@ -5,8 +5,21 @@ import svgCaptcha from 'svg-captcha';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET } from '../lib/auth.js';
 import { generateOTP, sendVerificationEmail, sendPasswordResetEmail } from '../lib/mailer.js';
+import { emailVerification } from '../lib/config.js';
 
 const router = Router();
+
+const issueSession = (user) => ({
+    token: jwt.sign({ id: user.id, email: user.email }, JWT_SECRET),
+    user: { id: user.id, email: user.email, name: user.name },
+});
+
+const EMAIL_DISABLED = 'Password reset by email is not available on this server. Contact the site owner.';
+
+// What the sign-in screens should offer (e.g. hide "Forgot password?" without email).
+router.get('/config', (req, res) => {
+    res.json({ emailVerification });
+});
 
 // --- Captcha replay protection ---
 // Each captcha token may be used for a single login attempt.
@@ -46,8 +59,15 @@ router.post('/register', async (req, res) => {
     try {
         const { email, password, name } = req.body;
 
+        if (!email || !password || String(password).length < 6) {
+            return res.status(400).json({ message: 'An email and a password of at least 6 characters are required.' });
+        }
+
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser && !emailVerification) {
+            return res.status(400).json({ message: 'User already exists with this email.' });
+        }
         if (existingUser) {
             // If they exist but are unverified, resend OTP
             if (!existingUser.isVerified) {
@@ -65,6 +85,14 @@ router.post('/register', async (req, res) => {
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Without email, accounts are active straight away and the user is signed in.
+        if (!emailVerification) {
+            const user = await prisma.user.create({
+                data: { email, password: hashedPassword, name, profile: '{}', isVerified: true },
+            });
+            return res.status(201).json(issueSession(user));
+        }
 
         // Generate OTP
         const otp = generateOTP();
@@ -145,6 +173,7 @@ router.post('/verify-email', async (req, res) => {
 
 // Resend OTP
 router.post('/resend-otp', async (req, res) => {
+    if (!emailVerification) return res.status(503).json({ message: 'Email verification is turned off on this server.' });
     try {
         const { email } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
@@ -166,6 +195,7 @@ router.post('/resend-otp', async (req, res) => {
 
 // Forgot Password
 router.post('/forgot-password', async (req, res) => {
+    if (!emailVerification) return res.status(503).json({ message: EMAIL_DISABLED });
     try {
         const { email } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
@@ -191,6 +221,7 @@ router.post('/forgot-password', async (req, res) => {
 
 // Reset Password
 router.post('/reset-password', async (req, res) => {
+    if (!emailVerification) return res.status(503).json({ message: EMAIL_DISABLED });
     try {
         const { email, otp, newPassword } = req.body;
 
@@ -255,16 +286,13 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid captcha.' });
         }
 
-        // Find user
+        // One message for both cases, so the login form doesn't reveal which emails are registered.
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return res.status(400).json({ message: 'User not found' });
-
-        // Check password
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) return res.status(400).json({ message: 'Invalid password' });
+        const validPassword = user ? await bcrypt.compare(password, user.password) : false;
+        if (!validPassword) return res.status(400).json({ message: 'Invalid email or password.' });
 
         // Block unverified accounts: resend a fresh OTP and send them to verification
-        if (!user.isVerified) {
+        if (!user.isVerified && emailVerification) {
             const otp = generateOTP();
             const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
             await prisma.user.update({
@@ -283,9 +311,7 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Generate Token
-        const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET);
-        res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+        res.json(issueSession(user));
 
     } catch (error) {
         res.status(500).json({ error: error.message });

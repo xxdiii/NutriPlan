@@ -1,0 +1,34 @@
+# Render Blueprint: one web service runs the API and serves the built React app.
+# The database is a Neon Postgres; paste its connection string as DATABASE_URL.
+services:
+  - type: web
+    name: nutriplan
+    runtime: node
+    plan: free
+    # Closest Render region to India; create the Neon database in AWS Singapore too.
+    region: singapore
+    # Dev dependencies (Vite, Prisma CLI) are needed to build, so they are installed
+    # even though NODE_ENV is production. Migrations and the food/recipe/price seed
+    # run on every deploy; the seed only upserts, so user data is untouched.
+    buildCommand: >-
+      npm ci --include=dev && npm run build &&
+      cd server && npm ci --include=dev && npm run migrate && npm run seed
+    startCommand: cd server && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: GEMINI_FALLBACK_MODEL
+        value: gemini-2.5-flash
+      - key: EMAIL_VERIFICATION
+        value: "off"

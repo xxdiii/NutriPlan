@@ -29,7 +29,8 @@ NutriPlan is a full-stack web app that builds weekly Indian meal plans around yo
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** v18+
+- **Node.js** v20+
+- **PostgreSQL**: a local install, or a free [Neon](https://neon.tech) database
 
 ### 1. Clone
 ```bash
@@ -45,8 +46,10 @@ npm install
 
 Create `server/.env`:
 ```
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://postgres:your-password@localhost:5432/nutriplan"
 JWT_SECRET="a-long-random-string"
+# Set to "off" to sign people up without email verification (password reset is then unavailable)
+EMAIL_VERIFICATION="on"
 # Email (for verification and password reset codes). For Gmail use an App Password.
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
@@ -61,9 +64,9 @@ GEMINI_FALLBACK_MODEL="gemini-2.5-flash"
 GEMINI_DAILY_LIMIT="60"
 ```
 
-Create the database, load the food and recipe data, and start the API:
+Create the tables, load the food, recipe and price data, and start the API:
 ```bash
-npx prisma db push
+npm run migrate
 npm run seed
 npm start
 ```
@@ -76,6 +79,16 @@ npm install
 npm run dev
 ```
 The app opens at http://localhost:5173.
+
+### Deploying (Render + Neon, free)
+The repo includes a Render Blueprint (`render.yaml`): one web service builds the React app, runs database migrations and the seed, and serves both the app and the API from the same address.
+
+1. Create a free Postgres database on [Neon](https://neon.tech) (region: AWS Asia Pacific, Singapore) and copy its connection string.
+2. On [Render](https://render.com), choose **New → Blueprint** and select this repository.
+3. Fill in `DATABASE_URL` (the Neon connection string) and `GEMINI_API_KEY`. `JWT_SECRET` is generated for you; email verification is off by default (`EMAIL_VERIFICATION`).
+4. Deploy. The app is live at the `onrender.com` address Render shows; `/api/health` should return `{"ok":true}`.
+
+Free Render services sleep after 15 minutes without visitors, so the first visit afterwards takes up to a minute.
 
 ### Tests
 ```bash

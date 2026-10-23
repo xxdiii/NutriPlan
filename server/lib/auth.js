@@ -1,6 +1,12 @@
 import jwt from 'jsonwebtoken';
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'secret_key';
+import { isProduction } from './config.js';
+
+// Tokens signed with a guessable secret could be forged, so production refuses to start without one.
+if (isProduction && !process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be set in production.');
+}
+export const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret';
 
 // Middleware: Authenticate Token
 export const authenticateToken = (req, res, next) => {

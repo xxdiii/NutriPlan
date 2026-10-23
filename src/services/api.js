@@ -1,5 +1,6 @@
-// Set VITE_API_URL to use another API server (e.g. a test copy on another port).
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// The production build is served by the API server itself, so it uses the same origin.
+// In development the API runs on port 3000. VITE_API_URL overrides both.
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000/api' : '/api');
 
 const handleResponse = async (response) => {
     if (!response.ok) {
@@ -37,6 +38,12 @@ const getHeaders = () => {
 
 export const api = {
     // Auth
+    // { emailVerification }: whether this server sends verification and reset emails
+    getAuthConfig: async () => {
+        const res = await fetch(`${API_URL}/auth/config`);
+        return handleResponse(res);
+    },
+
     getCaptcha: async () => {
         const res = await fetch(`${API_URL}/auth/captcha`);
         return handleResponse(res);
